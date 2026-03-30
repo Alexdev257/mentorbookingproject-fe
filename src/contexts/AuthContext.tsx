@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import type { UserInfo, AuthState } from '../types';
+import { authApi } from '../api/services';
 
 interface AuthContextType extends AuthState {
   login: (accessToken: string, refreshToken: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -54,7 +55,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      try {
+        await authApi.logout();
+      } catch {
+        // Still clear local session if server unreachable
+      }
+    }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setState({
@@ -78,7 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isAuthenticated: true,
         });
       } else {
-        logout();
+        void logout();
       }
     }
     setIsLoading(false);

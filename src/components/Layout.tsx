@@ -7,14 +7,16 @@ const Layout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
   return (
     <div className="app-container">
-      <aside className="sidebar">
+      <aside
+        className={`sidebar${user?.role === 1 ? ' sidebar--admin' : ''}${user?.role === 2 ? ' sidebar--mentor' : ''}`}
+      >
         <div className="sidebar-brand">
           <h2 style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ padding: '6px', background: 'var(--brand-gradient)', borderRadius: '8px' }}>
@@ -28,15 +30,15 @@ const Layout: React.FC = () => {
           {/* Admin Links */}
           {user?.role === 1 && (
             <>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', margin: '1rem 0 0.5rem' }}>Admin</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', margin: '1rem 0 0.5rem', letterSpacing: '0.06em' }}>Quản trị</p>
               <NavLink to="/admin/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <LayoutDashboard size={20} /> Dashboard
+                <LayoutDashboard size={20} /> Tổng quan
               </NavLink>
               <NavLink to="/admin/teachers" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <UserCheck size={20} /> Teachers
+                <UserCheck size={20} /> Giảng viên
               </NavLink>
               <NavLink to="/admin/students" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Users size={20} /> Students
+                <Users size={20} /> Sinh viên
               </NavLink>
             </>
           )}
@@ -44,15 +46,22 @@ const Layout: React.FC = () => {
           {/* Mentor/Teacher Links */}
           {user?.role === 2 && (
             <>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', margin: '1rem 0 0.5rem' }}>Mentor</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', margin: '1rem 0 0.5rem', letterSpacing: '0.06em' }}>Mentor</p>
               <NavLink to="/mentor/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <LayoutDashboard size={20} /> Dashboard
+                <LayoutDashboard size={20} /> Tổng quan
               </NavLink>
               <NavLink to="/mentor/slots" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <Calendar size={20} /> My Slots
+                <Calendar size={20} /> Lịch trống
               </NavLink>
-              <NavLink to="/mentor/bookings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <BookOpen size={20} /> Requests
+              <NavLink
+                to="/mentor/bookings"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                title="Chấp nhận / từ chối / hủy booking từ sinh viên"
+              >
+                <BookOpen size={20} /> Duyệt booking
+              </NavLink>
+              <NavLink to="/mentor/reviews" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Star size={20} /> Đánh giá nhận được
               </NavLink>
             </>
           )}

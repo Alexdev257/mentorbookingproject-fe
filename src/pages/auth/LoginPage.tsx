@@ -22,7 +22,7 @@ const LoginPage: React.FC = () => {
 
     try {
       const response = await authApi.login({ email, password });
-      if (response.isSuccess) {
+      if (response.isSuccess && response.data) {
         login(response.data.accessToken, response.data.refreshToken);
         // Navigate based on role if not coming from a specific page
         if (from === '/') {

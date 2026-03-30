@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { userApi } from '../../api/services';
+import { mentorsApi } from '../../api/services';
 import type { TeacherResponseDto } from '../../types';
 import { Search, GraduationCap, Star, ArrowRight, Loader2 } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const BrowseMentorsPage: React.FC = () => {
   useEffect(() => {
     const fetchMentors = async () => {
       try {
-        const response = await userApi.getAllMentors(1, 100);
+        const response = await mentorsApi.list(1, 100);
         if (response.isSuccess && response.data?.items) {
           setMentors(response.data.items);
         }

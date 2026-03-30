@@ -1,19 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../api/booking';
+import { userApi } from '../../api/services';
+import { useAuth } from '../../contexts/AuthContext';
 import type { BookingResponseDto } from '../../types';
-import { Check, X, Calendar, Clock, User, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { Check, X, Calendar, Clock, User, Link as LinkIcon, Loader2, Inbox, Ban } from 'lucide-react';
+import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
+import { BookingStatus } from '../../constants/bookingStatus';
+import { MonthCalendar } from '../../components/calendar/MonthCalendar';
+import type { MonthCalMarker } from '../../components/calendar/MonthCalendar';
+import { isSameLocalDay, startOfMonth, toLocalYmd } from '../../components/calendar/monthUtils';
+
+const statusLabel = (s: number) => {
+  if (s === BookingStatus.Pending) return 'Chờ duyệt';
+  if (s === BookingStatus.Confirmed) return 'Đã xác nhận';
+  if (s === BookingStatus.Rejected) return 'Từ chối';
+  if (s === BookingStatus.Cancelled) return 'Đã hủy';
+  if (s === BookingStatus.Completed) return 'Hoàn thành';
+  return 'Khác';
+};
+
+const statusBadgeClass = (s: number) => {
+  if (s === BookingStatus.Pending) return 'status-pending';
+  if (s === BookingStatus.Confirmed || s === BookingStatus.Completed) return 'status-active';
+  return 'status-inactive';
+};
+
+function bookingMarker(status: number): { color: string; title: string } {
+  switch (status) {
+    case BookingStatus.Pending:
+      return { color: 'var(--warning, #dbab09)', title: 'Chờ duyệt' };
+    case BookingStatus.Confirmed:
+    case BookingStatus.Completed:
+      return { color: 'var(--success, #3fb950)', title: status === BookingStatus.Completed ? 'Hoàn thành' : 'Đã xác nhận' };
+    case BookingStatus.Rejected:
+    case BookingStatus.Cancelled:
+      return { color: 'var(--text-muted, #8b949e)', title: status === BookingStatus.Rejected ? 'Từ chối' : 'Đã hủy' };
+    default:
+      return { color: '#888', title: 'Khác' };
+  }
+}
 
 const BookingRequestsPage: React.FC = () => {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<BookingResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [menteeNames, setMenteeNames] = useState<Record<string, string>>({});
+  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
+  const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
 
   const fetchBookings = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await bookingApi.getMentorBookings();
-      if (response.isSuccess) {
-        // Status: 1 = Pending, 2 = Accepted, 3 = Rejected, 4 = Cancelled
-        setBookings(response.data);
+      const response = await bookingApi.getMentorBookings(user.id, 1, 80);
+      if (response.isSuccess && response.data?.items) {
+        setBookings(response.data.items);
       }
     } catch (err) {
       console.error('Failed to fetch bookings:', err);
@@ -22,115 +66,318 @@ const BookingRequestsPage: React.FC = () => {
     }
   };
 
+  const refetchBookings = async () => {
+    if (!user) return;
+    try {
+      const response = await bookingApi.getMentorBookings(user.id, 1, 80);
+      if (response.isSuccess && response.data?.items) {
+        setBookings(response.data.items);
+      } else if (response.isSuccess) {
+        setBookings([]);
+      }
+    } catch (err) {
+      console.error('Failed to refetch bookings:', err);
+    }
+  };
+
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    setLoading(true);
+    void fetchBookings();
+  }, [user]);
+
+  // Poll to make sure new pending bookings appear smoothly without reload.
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setInterval(() => {
+      void refetchBookings();
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [user]);
+
+  useEffect(() => {
+    if (!bookings.length) {
+      setMenteeNames({});
+      return;
+    }
+    const uniqueMenteeIds = [...new Set(bookings.map((b) => b.menteeId))];
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        uniqueMenteeIds.map(async (id) => {
+          try {
+            const r = await userApi.getUserById(id);
+            if (r.isSuccess && r.data) {
+              const name = r.data.fullName?.trim() || r.data.email;
+              return [id, name] as const;
+            }
+          } catch {
+            /* ignore */
+          }
+          return [id, 'Sinh viên'] as const;
+        })
+      );
+      if (alive) setMenteeNames(Object.fromEntries(entries));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [bookings]);
+
+  const markersByDay = useMemo(() => {
+    const map: Record<string, MonthCalMarker[]> = {};
+    for (const b of bookings) {
+      const key = toLocalYmd(new Date(b.scheduleStart));
+      if (!map[key]) map[key] = [];
+      const m = bookingMarker(b.status);
+      map[key].push({ color: m.color, title: m.title });
+    }
+    return map;
+  }, [bookings]);
+
+  const displayedBookings = useMemo(() => {
+    if (!selectedFilterDate) return bookings;
+    return bookings.filter((b) => isSameLocalDay(b.scheduleStart, selectedFilterDate));
+  }, [bookings, selectedFilterDate]);
 
   const handleAction = async (id: string, action: 'accept' | 'reject') => {
     setProcessingId(id);
     try {
-      const response = action === 'accept' 
-        ? await bookingApi.acceptBooking(id) 
-        : await bookingApi.rejectBooking(id, 'Requested by mentor');
-      
+      const response = action === 'accept' ? await bookingApi.acceptBooking(id) : await bookingApi.rejectBooking(id);
       if (response.isSuccess) {
         await fetchBookings();
+      } else {
+        window.alert(response.message || (action === 'accept' ? 'Chấp nhận thất bại' : 'Từ chối thất bại'));
       }
     } catch (err) {
       console.error(`Failed to ${action} booking:`, err);
+      window.alert('Lỗi mạng hoặc máy chủ.');
     } finally {
       setProcessingId(null);
     }
   };
 
+  const handleCancelAccepted = async (id: string) => {
+    if (!window.confirm('Hủy buổi đã xác nhận? Slot sẽ được mở lại cho sinh viên khác.')) return;
+    setProcessingId(id);
+    try {
+      const response = await bookingApi.cancelBooking(id);
+      if (response.isSuccess) {
+        await fetchBookings();
+      } else {
+        window.alert(response.message || 'Hủy lịch thất bại');
+      }
+    } catch (err) {
+      console.error('Failed to cancel booking:', err);
+      window.alert('Lỗi mạng hoặc máy chủ.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const pendingCount = bookings.filter((b) => b.status === BookingStatus.Pending).length;
+
   return (
-    <div className="animate-fade-in">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1>Booking Requests</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Review and manage session requests from students</p>
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Mentor"
+        title="Yêu cầu đặt lịch"
+        description="Đây là trang duyệt booking: Chấp nhận / Từ chối khi còn chờ; sau khi chấp nhận có thể vào link họp hoặc Hủy buổi nếu cần đổi kế hoạch."
+        actions={<span className="admin-chip">{loading ? '…' : `${pendingCount} chờ xử lý`}</span>}
+      />
+
+      <div className="admin-panel" style={{ padding: '1rem 1.15rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.85rem' }}>
+          <div style={{ fontWeight: 750 }}>Lịch booking</div>
+          {selectedFilterDate ? (
+            <button type="button" className="admin-btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.45rem 0.85rem' }} onClick={() => setSelectedFilterDate(null)}>
+              Hiển thị tất cả ngày
+            </button>
+          ) : null}
+        </div>
+        <MonthCalendar
+          visibleMonth={visibleMonth}
+          onVisibleMonthChange={(d) => setVisibleMonth(startOfMonth(d))}
+          selectedDate={selectedFilterDate}
+          onSelectDate={(d) => {
+            const x = new Date(d);
+            x.setHours(0, 0, 0, 0);
+            setSelectedFilterDate(x);
+            setVisibleMonth(startOfMonth(x));
+          }}
+          markersByDay={markersByDay}
+        />
+        {selectedFilterDate ? (
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.85rem' }}>
+            Đang lọc: <strong>{selectedFilterDate.toLocaleDateString('vi-VN')}</strong> — {displayedBookings.length} dòng
+          </p>
+        ) : null}
       </div>
 
-      <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--bg-tertiary)' }}>
-              <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Mentee</th>
-              <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Schedule</th>
-              <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Topic</th>
-              <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
-              <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Link / Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center' }}>Loading requests...</td></tr>
-            ) : bookings.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No booking requests found.</td></tr>
-            ) : bookings.map((booking) => (
-              <tr key={booking.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                <td style={{ padding: '1rem 1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={16} />
-                    </div>
-                    <span style={{ fontWeight: 600 }}>Mentee User</span>
-                  </div>
-                </td>
-                <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar size={14} className="text-secondary" />
-                    {new Date(booking.scheduleStart).toLocaleDateString()}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                    <Clock size={14} />
-                    {new Date(booking.scheduleStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </td>
-                <td style={{ padding: '1rem 1.5rem' }}>
-                   <div style={{ fontWeight: 500 }}>{booking.topic || 'No topic specified'}</div>
-                   <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{booking.notes}</div>
-                </td>
-                <td style={{ padding: '1rem 1.5rem' }}>
-                  <span className={`status-badge ${
-                    booking.status === 1 ? 'status-pending' : 
-                    booking.status === 2 ? 'status-active' : 
-                    'status-inactive'
-                  }`}>
-                    {booking.status === 1 ? 'Pending' : booking.status === 2 ? 'Accepted' : booking.status === 3 ? 'Rejected' : 'Cancelled'}
-                  </span>
-                </td>
-                <td style={{ padding: '1rem 1.5rem' }}>
-                  {booking.status === 1 ? (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        className="btn-primary" 
-                        style={{ padding: '0.5rem', minWidth: 'auto', background: 'var(--success)' }}
-                        onClick={() => handleAction(booking.id, 'accept')}
-                        disabled={processingId === booking.id}
-                      >
-                        {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Check size={18} />}
-                      </button>
-                      <button 
-                        className="btn-primary" 
-                        style={{ padding: '0.5rem', minWidth: 'auto', background: 'var(--error)' }}
-                        onClick={() => handleAction(booking.id, 'reject')}
-                        disabled={processingId === booking.id}
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  ) : booking.status === 2 && booking.meetingLink ? (
-                    <a href={booking.meetingLink} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8125rem' }}>
-                      <LinkIcon size={14} /> Join Meeting
-                    </a>
-                  ) : (
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>N/A</span>
-                  )}
-                </td>
+      <div className="admin-panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="admin-table-scroll">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Lịch hẹn</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th style={{ minWidth: 140 }}>Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-skeleton" style={{ padding: '2.5rem' }}>
+                      <div className="admin-skeleton-bar" />
+                      <div className="admin-skeleton-bar" style={{ maxWidth: 320 }} />
+                    </div>
+                  </td>
+                </tr>
+              ) : displayedBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-empty">
+                      <div className="admin-empty-icon">
+                        <Inbox size={28} />
+                      </div>
+                      <p style={{ fontWeight: 600 }}>Chưa có yêu cầu</p>
+                      <p style={{ fontSize: '0.875rem', marginTop: '0.35rem' }}>
+                        {selectedFilterDate
+                          ? 'Không có booking trong ngày này. Chọn ngày khác hoặc bấm “Hiển thị tất cả ngày”.'
+                          : 'Khi sinh viên đặt lịch với bạn, hàng sẽ xuất hiện tại đây.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                displayedBookings.map((booking) => (
+                  <tr key={booking.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="admin-avatar" style={{ width: 38, height: 38 }}>
+                          <User size={18} color="var(--text-secondary)" />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 650 }}>{menteeNames[booking.menteeId] ?? '…'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID mentee</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.875rem' }}>
+                        <Calendar size={15} color="var(--text-muted)" />
+                        {new Date(booking.scheduleStart).toLocaleDateString('vi-VN')}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '0.8125rem' }}>
+                        <Clock size={14} />
+                        {new Date(booking.scheduleStart).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} —{' '}
+                        {new Date(booking.scheduleEnd).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{booking.topic || '—'}</div>
+                      {booking.notes ? (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.2rem', maxWidth: 280 }}>{booking.notes}</div>
+                      ) : null}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                        {booking.priceAmount > 0 ? `${booking.priceAmount.toLocaleString('vi-VN')} ${booking.currency}` : ''}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${statusBadgeClass(booking.status)}`}>
+                        {statusLabel(booking.status)}
+                      </span>
+                    </td>
+                    <td>
+                        {booking.status === BookingStatus.Pending ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="admin-btn-primary"
+                            style={{
+                              padding: '0.5rem 0.85rem',
+                              fontSize: '0.8125rem',
+                              background: 'linear-gradient(135deg, #3fb950 0%, #238636 100%)',
+                              boxShadow: '0 2px 12px rgba(63,185,80,0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                            }}
+                            onClick={() => handleAction(booking.id, 'accept')}
+                            disabled={processingId === booking.id}
+                          >
+                            {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Check size={17} />}
+                            Chấp nhận
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn-secondary"
+                            style={{
+                              padding: '0.5rem 0.85rem',
+                              fontSize: '0.8125rem',
+                              borderColor: 'rgba(248,81,73,0.4)',
+                              color: '#ff8b87',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                            }}
+                            onClick={() => handleAction(booking.id, 'reject')}
+                            disabled={processingId === booking.id}
+                          >
+                            <X size={17} />
+                            Từ chối
+                          </button>
+                        </div>
+                      ) : booking.status === BookingStatus.Confirmed ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {booking.meetingLink ? (
+                            <a
+                              href={booking.meetingLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-btn-primary"
+                              style={{
+                                padding: '0.5rem 0.85rem',
+                                fontSize: '0.8125rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                              }}
+                            >
+                              <LinkIcon size={15} /> Vào họp
+                            </a>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="admin-btn-secondary"
+                            style={{
+                              padding: '0.5rem 0.85rem',
+                              fontSize: '0.8125rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              borderColor: 'rgba(219,171,9,0.45)',
+                              color: 'var(--warning)',
+                            }}
+                            onClick={() => void handleCancelAccepted(booking.id)}
+                            disabled={processingId === booking.id}
+                          >
+                            {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Ban size={16} />}
+                            Hủy lịch
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

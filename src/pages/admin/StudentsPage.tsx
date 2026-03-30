@@ -2,11 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/services';
 import type { StudentResponseDto } from '../../types';
 import { Plus, Search, Edit2, Trash2, GraduationCap } from 'lucide-react';
+import { AddStudentModal } from '../../components/admin/AddStudentModal';
+import { EditStudentModal } from '../../components/admin/EditStudentModal';
+import { AdminConfirmDialog } from '../../components/admin/AdminConfirmDialog';
+import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 
 const StudentsPage: React.FC = () => {
   const [students, setStudents] = useState<StudentResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [editStudent, setEditStudent] = useState<StudentResponseDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StudentResponseDto | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchStudents = async () => {
     try {
@@ -25,84 +33,180 @@ const StudentsPage: React.FC = () => {
     fetchStudents();
   }, []);
 
-  const filteredStudents = students.filter(s => 
-    s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.studentCode.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStudents = students.filter(
+    (s) =>
+      s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.studentCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1>Students Management</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>View and manage student records and enrollment</p>
-        </div>
-        <button className="btn-primary">
-          <Plus size={20} /> Add New Student
-        </button>
-      </div>
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Quản trị"
+        title="Sinh viên"
+        description="Theo dõi mentee: mã sinh viên, email và trạng thái tài khoản. Thêm sinh viên mới khi cần."
+        actions={
+          <button type="button" className="admin-btn-primary" onClick={() => setAddOpen(true)}>
+            <Plus size={20} strokeWidth={2.25} />
+            Thêm sinh viên
+          </button>
+        }
+      />
 
-      <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--bg-tertiary)', display: 'flex', gap: '1rem' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
-            <input 
-              type="text" 
-              className="input-field" 
-              style={{ paddingLeft: '3rem' }} 
-              placeholder="Search by name, email or student code..."
+      <AddStudentModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSuccess={() => {
+          setLoading(true);
+          void fetchStudents();
+        }}
+      />
+
+      <EditStudentModal
+        open={!!editStudent}
+        student={editStudent}
+        onClose={() => setEditStudent(null)}
+        onSuccess={() => {
+          setLoading(true);
+          void fetchStudents();
+        }}
+      />
+
+      <AdminConfirmDialog
+        open={!!deleteTarget}
+        title="Vô hiệu hóa sinh viên?"
+        message={
+          deleteTarget
+            ? `Tài khoản "${deleteTarget.fullName}" sẽ được đánh dấu ngưng hoạt động (soft delete).`
+            : ''
+        }
+        confirmLabel="Vô hiệu hóa"
+        loading={deleteLoading}
+        onCancel={() => !deleteLoading && setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleteLoading(true);
+          try {
+            const res = await adminApi.deleteStudent(deleteTarget.id);
+            if (res.isSuccess) {
+              setDeleteTarget(null);
+              setLoading(true);
+              await fetchStudents();
+            } else {
+              window.alert(res.message || 'Không xóa được');
+            }
+          } catch {
+            window.alert('Lỗi mạng hoặc máy chủ');
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+      />
+
+      <div className="admin-panel">
+        <div className="admin-toolbar">
+          <div className="admin-search-wrap">
+            <span className="admin-search-icon">
+              <Search size={18} />
+            </span>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Tìm theo tên, email, mã SV..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Tìm sinh viên"
             />
           </div>
+          <span className="admin-chip">
+            {loading ? '…' : `${filteredStudents.length} / ${students.length} hiển thị`}
+          </span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="admin-table-scroll">
+          <table className="admin-table">
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--bg-tertiary)' }}>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Student</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Student Code</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Email</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Mã SV</th>
+                <th>Email</th>
+                <th>Trạng thái</th>
+                <th style={{ width: '108px' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading students...</td></tr>
-              ) : filteredStudents.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No students found.</td></tr>
-              ) : filteredStudents.map((student) => (
-                <tr key={student.id} style={{ borderBottom: '1px solid var(--bg-tertiary)', transition: 'var(--transition)' }}>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden' }}>
-                        {student.avatarUrl ? <img src={student.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <GraduationCap size={20} color="var(--brand-primary)" />}
-                      </div>
-                      <div style={{ fontWeight: 600 }}>{student.fullName}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>
-                    <code style={{ background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--brand-primary)' }}>
-                      {student.studentCode}
-                    </code>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{student.email}</td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <span className={`status-badge ${student.isActive ? 'status-active' : 'status-inactive'}`}>
-                      {student.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="nav-link" style={{ padding: '6px' }} title="Edit"><Edit2 size={16} /></button>
-                      <button className="nav-link" style={{ padding: '6px' }} title="Delete"><Trash2 size={16} /></button>
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-skeleton" aria-busy="true">
+                      <div className="admin-skeleton-bar" />
+                      <div className="admin-skeleton-bar" style={{ maxWidth: 220 }} />
+                      <div className="admin-skeleton-bar" style={{ maxWidth: 180 }} />
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-empty">
+                      <div className="admin-empty-icon">
+                        <GraduationCap size={28} />
+                      </div>
+                      <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                        Chưa có dữ liệu
+                      </p>
+                      <p style={{ fontSize: '0.875rem' }}>Thử đổi bộ lọc hoặc thêm sinh viên mới.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredStudents.map((student) => (
+                  <tr key={student.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <div className="admin-avatar admin-avatar--square">
+                          {student.avatarUrl ? (
+                            <img src={student.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <GraduationCap size={20} color="var(--brand-primary)" />
+                          )}
+                        </div>
+                        <div style={{ fontWeight: 650 }}>{student.fullName}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="code-pill">{student.studentCode || '—'}</span>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{student.email}</td>
+                    <td>
+                      <span className={`status-badge ${student.isActive ? 'status-active' : 'status-inactive'}`}>
+                        {student.isActive ? 'Hoạt động' : 'Ngưng'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="Chỉnh sửa"
+                          onClick={() => setEditStudent(student)}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="Vô hiệu hóa"
+                          onClick={() => setDeleteTarget(student)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

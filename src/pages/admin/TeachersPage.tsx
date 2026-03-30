@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/services';
 import type { TeacherResponseDto } from '../../types';
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, UserCircle } from 'lucide-react';
+import { AddTeacherModal } from '../../components/admin/AddTeacherModal';
+import { EditTeacherModal } from '../../components/admin/EditTeacherModal';
+import { AdminConfirmDialog } from '../../components/admin/AdminConfirmDialog';
+import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 
 const TeachersPage: React.FC = () => {
   const [teachers, setTeachers] = useState<TeacherResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [editTeacher, setEditTeacher] = useState<TeacherResponseDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TeacherResponseDto | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchTeachers = async () => {
     try {
@@ -25,83 +33,185 @@ const TeachersPage: React.FC = () => {
     fetchTeachers();
   }, []);
 
-  const filteredTeachers = teachers.filter(t => 
-    t.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTeachers = teachers.filter(
+    (t) =>
+      t.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1>Teachers Management</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage faculty members and their specializations</p>
-        </div>
-        <button className="btn-primary">
-          <Plus size={20} /> Add New Teacher
-        </button>
-      </div>
+    <div className="admin-page">
+      <AdminPageHeader
+        eyebrow="Quản trị"
+        title="Giảng viên"
+        description="Danh sách mentor trên hệ thống: tìm kiếm theo tên, email hoặc khoa. Thêm tài khoản mới khi cần."
+        actions={
+          <button type="button" className="admin-btn-primary" onClick={() => setAddOpen(true)}>
+            <Plus size={20} strokeWidth={2.25} />
+            Thêm giảng viên
+          </button>
+        }
+      />
 
-      <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--bg-tertiary)', display: 'flex', gap: '1rem' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
-            <input 
-              type="text" 
-              className="input-field" 
-              style={{ paddingLeft: '3rem' }} 
-              placeholder="Search by name, email or department..."
+      <AddTeacherModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSuccess={() => {
+          setLoading(true);
+          void fetchTeachers();
+        }}
+      />
+
+      <EditTeacherModal
+        open={!!editTeacher}
+        teacher={editTeacher}
+        onClose={() => setEditTeacher(null)}
+        onSuccess={() => {
+          setLoading(true);
+          void fetchTeachers();
+        }}
+      />
+
+      <AdminConfirmDialog
+        open={!!deleteTarget}
+        title="Vô hiệu hóa giảng viên?"
+        message={
+          deleteTarget
+            ? `Tài khoản "${deleteTarget.fullName}" sẽ được đánh dấu ngưng hoạt động (soft delete).`
+            : ''
+        }
+        confirmLabel="Vô hiệu hóa"
+        loading={deleteLoading}
+        onCancel={() => !deleteLoading && setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleteLoading(true);
+          try {
+            const res = await adminApi.deleteTeacher(deleteTarget.id);
+            if (res.isSuccess) {
+              setDeleteTarget(null);
+              setLoading(true);
+              await fetchTeachers();
+            } else {
+              window.alert(res.message || 'Không xóa được');
+            }
+          } catch {
+            window.alert('Lỗi mạng hoặc máy chủ');
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+      />
+
+      <div className="admin-panel">
+        <div className="admin-toolbar">
+          <div className="admin-search-wrap">
+            <span className="admin-search-icon">
+              <Search size={18} />
+            </span>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Tìm theo tên, email, khoa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Tìm giảng viên"
             />
           </div>
+          <span className="admin-chip">
+            {loading ? '…' : `${filteredTeachers.length} / ${teachers.length} hiển thị`}
+          </span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="admin-table-scroll">
+          <table className="admin-table">
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--bg-tertiary)' }}>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Teacher</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Department</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Specialization</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
-                <th style={{ padding: '1rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
+              <tr>
+                <th>Giảng viên</th>
+                <th>Khoa</th>
+                <th>Chuyên môn</th>
+                <th>Trạng thái</th>
+                <th style={{ width: '108px' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading teachers...</td></tr>
-              ) : filteredTeachers.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No teachers found.</td></tr>
-              ) : filteredTeachers.map((teacher) => (
-                <tr key={teacher.id} style={{ borderBottom: '1px solid var(--bg-tertiary)', transition: 'var(--transition)' }}>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden' }}>
-                        {teacher.avatarUrl ? <img src={teacher.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : teacher.fullName.charAt(0)}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{teacher.fullName}</div>
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{teacher.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>{teacher.department}</td>
-                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>{teacher.specialization}</td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <span className={`status-badge ${teacher.isActive ? 'status-active' : 'status-inactive'}`}>
-                      {teacher.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem 1.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="nav-link" style={{ padding: '6px' }} title="Edit"><Edit2 size={16} /></button>
-                      <button className="nav-link" style={{ padding: '6px' }} title="Delete"><Trash2 size={16} /></button>
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-skeleton" aria-busy="true">
+                      <div className="admin-skeleton-bar" />
+                      <div className="admin-skeleton-bar" style={{ maxWidth: 220 }} />
+                      <div className="admin-skeleton-bar" style={{ maxWidth: 180 }} />
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredTeachers.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="admin-empty">
+                      <div className="admin-empty-icon">
+                        <UserCircle size={28} />
+                      </div>
+                      <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                        Chưa có dữ liệu
+                      </p>
+                      <p style={{ fontSize: '0.875rem' }}>
+                        Thử đổi từ khóa tìm kiếm hoặc thêm giảng viên mới.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredTeachers.map((teacher) => (
+                  <tr key={teacher.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <div className="admin-avatar">
+                          {teacher.avatarUrl ? (
+                            <img src={teacher.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            teacher.fullName.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 650 }}>{teacher.fullName}</div>
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                            {teacher.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{teacher.department || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{teacher.specialization || '—'}</td>
+                    <td>
+                      <span className={`status-badge ${teacher.isActive ? 'status-active' : 'status-inactive'}`}>
+                        {teacher.isActive ? 'Hoạt động' : 'Ngưng'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="Chỉnh sửa"
+                          onClick={() => setEditTeacher(teacher)}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="Vô hiệu hóa"
+                          onClick={() => setDeleteTarget(teacher)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

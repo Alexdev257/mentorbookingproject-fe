@@ -20,6 +20,16 @@ export interface CommonResponse<T> {
   listErrors: { field: string; detail: string }[];
 }
 
+export interface PaginationResponse<T> {
+  items: T[];
+  totalItems: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages?: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
 export interface TokenDTO {
   accessToken: string;
   refreshToken: string;
@@ -27,6 +37,8 @@ export interface TokenDTO {
 
 export interface TeacherResponseDto {
   id: string;
+  /** Account id (JWT sub) — dùng cho booking/slots; khác với id hồ sơ giáo viên */
+  userId: string;
   fullName: string;
   email: string;
   phone: string;
@@ -53,6 +65,7 @@ export interface SlotResponseDto {
   isBooked: boolean;
 }
 
+/** `status` = `BookingStatusEnum`: Pending=0, Confirmed=1, Rejected=2, Cancelled=3, Completed=4 */
 export interface BookingResponseDto {
   id: string;
   mentorId: string;
@@ -66,6 +79,17 @@ export interface BookingResponseDto {
   scheduleStart: string;
   scheduleEnd: string;
   meetingLink?: string;
+  googleEventId?: string;
+  createdAt?: string;
+}
+
+/** Review user payload — backend serializes `Fullname` as `fullname` (camelCase). */
+export interface ReviewUserDto {
+  id?: string;
+  email?: string;
+  fullName?: string;
+  fullname?: string;
+  avatarUrl?: string;
 }
 
 export interface ReviewResponseDto {
@@ -73,6 +97,6 @@ export interface ReviewResponseDto {
   bookingId: string;
   rating: number;
   comment?: string;
-  mentor?: { fullName: string; email: string };
-  mentee?: { fullName: string; email: string };
+  mentor?: ReviewUserDto;
+  mentee?: ReviewUserDto;
 }
