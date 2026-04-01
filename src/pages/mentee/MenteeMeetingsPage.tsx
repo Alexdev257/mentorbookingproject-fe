@@ -163,6 +163,17 @@ function buildInsightMindmapFromJson(sentiment?: SentimentNode | null, report?: 
   };
 }
 
+function buildKeyPointsMindmap(keyPoints?: string[]): MindmapNode | null {
+  if (!keyPoints?.length) return null;
+  return {
+    centralTopic: 'Key Points',
+    branches: keyPoints.slice(0, 12).map((kp, idx) => ({
+      topic: `Ý chính ${idx + 1}`,
+      subtopics: [shortText(kp, 120)],
+    })),
+  };
+}
+
 const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) => {
   const normalized = segments
     .map((s) => ({
@@ -464,6 +475,9 @@ const MenteeMeetingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<BookingResponseDto[]>([]);
   const [meetingByBooking, setMeetingByBooking] = useState<Record<string, MeetingBundle>>({});
   const [bookingTranscriptById, setBookingTranscriptById] = useState<Record<string, BookingTranscriptDetail>>({});
+  /** Per recording/transcript panel: which detail sub-tab is active */
+  const [transcriptDetailTabByKey, setTranscriptDetailTabByKey] = useState<Record<string, 'segments' | 'summary'>>({});
+
 
   useEffect(() => {
     if (!user) {
@@ -741,92 +755,178 @@ const MenteeMeetingsPage: React.FC = () => {
                                   </p>
                                 ) : null}
 
-                                <div
-                                  style={{
-                                    fontWeight: 800,
-                                    marginBottom: '0.4rem',
-                                    fontSize: '0.92rem',
-                                    letterSpacing: '0.01em',
-                                    color: '#b9d9ff',
-                                  }}
-                                >
-                                  Transcript
-                                </div>
-                                {transcriptByBooking.data?.cleanText ? (
-                                  <div
-                                    style={{
-                                      marginBottom: '0.55rem',
-                                      border: '1px solid rgba(255,255,255,0.13)',
-                                      borderRadius: 10,
-                                      padding: '0.5rem 0.55rem',
-                                      background: 'rgba(255,255,255,0.03)',
-                                    }}
-                                  >
-                                    <strong>Clean text:</strong>
-                                    <p style={{ whiteSpace: 'pre-wrap', margin: '0.25rem 0 0', color: 'var(--text-secondary)' }}>{transcriptByBooking.data.cleanText}</p>
-                                  </div>
-                                ) : null}
-                                {transcriptByBooking.data?.rawText ? (
-                                  <div
-                                    style={{
-                                      marginBottom: '0.55rem',
-                                      border: '1px solid rgba(255,255,255,0.12)',
-                                      borderRadius: 10,
-                                      padding: '0.5rem 0.55rem',
-                                      background: 'rgba(255,255,255,0.02)',
-                                    }}
-                                  >
-                                    <strong>Raw text:</strong>
-                                    <p style={{ whiteSpace: 'pre-wrap', margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>{transcriptByBooking.data.rawText}</p>
-                                  </div>
-                                ) : null}
-                                {transcriptByBooking.data?.segments?.length ? (
-                                  <div style={{ marginBottom: '0.5rem' }}>
-                                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Segments</div>
-                                    <SegmentTimeline segments={transcriptByBooking.data.segments} />
-                                    <div style={{ maxHeight: 180, overflow: 'auto', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                                      {transcriptByBooking.data.segments.map((s, idx) => (
-                                        <div key={idx} style={{ marginBottom: '0.22rem' }}>
-                                          <strong>[{s.startSeconds ?? 0}s - {s.endSeconds ?? 0}s]</strong> {s.text}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : null}
-
-                                <div
-                                  style={{
-                                    marginTop: '0.8rem',
-                                    marginBottom: '0.45rem',
-                                    fontWeight: 800,
-                                    fontSize: '0.92rem',
-                                    letterSpacing: '0.01em',
-                                    color: '#d7c3ff',
-                                  }}
-                                >
-                                  Summary Mindmap
-                                </div>
                                 {(() => {
+                                  const detailTab = transcriptDetailTabByKey[transcriptStateKey] ?? 'segments';
+                                  const setDetailTab = (t: 'segments' | 'summary') =>
+                                    setTranscriptDetailTabByKey((prev) => ({ ...prev, [transcriptStateKey]: t }));
+                                  const hasSegments = Boolean(transcriptByBooking.data?.segments?.length);
                                   const generatedMindmap = buildSummaryMindmap(transcriptByBooking.data?.summary, sentiment, report);
                                   const displayMindmap = mindmap ?? generatedMindmap;
-                                  return displayMindmap ? (
-                                    <div style={{ marginBottom: '0.6rem' }}>
-                                      <MindmapDiagram data={displayMindmap} />
-                                    </div>
-                                  ) : (
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      Chưa có dữ liệu summary để dựng mindmap.
-                                    </div>
-                                  );
-                                })()}
-                                {(() => {
                                   const insightMindmap = buildInsightMindmapFromJson(sentiment, report);
-                                  return insightMindmap ? (
-                                    <div style={{ marginBottom: '0.6rem' }}>
-                                      <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Insight Mindmap (from sentiment + report)</div>
-                                      <MindmapDiagram data={insightMindmap} />
-                                    </div>
-                                  ) : null;
+                                  const keyPointsMindmap = buildKeyPointsMindmap(transcriptByBooking.data?.summary?.keyPoints);
+                                  const hasSummaryText = Boolean(transcriptByBooking.data?.summary?.summary?.trim());
+                                  const hasSummaryVisual =
+                                    Boolean(displayMindmap) || Boolean(insightMindmap) || Boolean(keyPointsMindmap);
+                                  const tabBtn = (id: 'segments' | 'summary', label: string) => {
+                                    const active = detailTab === id;
+                                    return (
+                                      <button
+                                        key={id}
+                                        type="button"
+                                        onClick={() => setDetailTab(id)}
+                                        style={{
+                                          flex: 1,
+                                          minWidth: 120,
+                                          padding: '0.5rem 0.75rem',
+                                          borderRadius: 10,
+                                          border: active
+                                            ? '1px solid rgba(88,166,255,0.55)'
+                                            : '1px solid rgba(255,255,255,0.12)',
+                                          background: active
+                                            ? 'linear-gradient(180deg, rgba(88,166,255,0.22), rgba(88,166,255,0.08))'
+                                            : 'rgba(255,255,255,0.04)',
+                                          color: active ? '#e8f1ff' : 'var(--text-secondary)',
+                                          fontWeight: active ? 700 : 600,
+                                          fontSize: '0.8125rem',
+                                          cursor: 'pointer',
+                                          boxShadow: active ? '0 4px 14px rgba(88,166,255,0.2)' : 'none',
+                                          transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                                        }}
+                                      >
+                                        {label}
+                                      </button>
+                                    );
+                                  };
+                                  return (
+                                    <>
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          gap: '0.5rem',
+                                          flexWrap: 'wrap',
+                                          marginBottom: '0.65rem',
+                                          padding: '0.35rem',
+                                          borderRadius: 12,
+                                          background: 'rgba(0,0,0,0.18)',
+                                          border: '1px solid rgba(255,255,255,0.08)',
+                                        }}
+                                      >
+                                        {tabBtn('segments', 'Đoạn thoại (segments)')}
+                                        {tabBtn('summary', 'Tóm tắt & mindmap')}
+                                      </div>
+
+                                      {detailTab === 'segments' ? (
+                                        <div>
+                                          {hasSegments ? (
+                                            <>
+                                              <div
+                                                style={{
+                                                  fontWeight: 800,
+                                                  marginBottom: '0.4rem',
+                                                  fontSize: '0.92rem',
+                                                  letterSpacing: '0.01em',
+                                                  color: '#b9d9ff',
+                                                }}
+                                              >
+                                                Đoạn thoại theo thời gian
+                                              </div>
+                                              <div style={{ marginBottom: '0.5rem' }}>
+                                                <SegmentTimeline segments={transcriptByBooking.data!.segments!} />
+                                                <div
+                                                  style={{
+                                                    maxHeight: 220,
+                                                    overflow: 'auto',
+                                                    fontSize: '0.78rem',
+                                                    color: 'var(--text-secondary)',
+                                                    lineHeight: 1.45,
+                                                    marginTop: '0.45rem',
+                                                  }}
+                                                >
+                                                  {transcriptByBooking.data!.segments!.map((s, idx) => (
+                                                    <div key={idx} style={{ marginBottom: '0.22rem' }}>
+                                                      <strong>
+                                                        [{s.startSeconds ?? 0}s - {s.endSeconds ?? 0}s]
+                                                      </strong>{' '}
+                                                      {s.text}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </>
+                                          ) : (
+                                            <div
+                                              style={{
+                                                fontSize: '0.85rem',
+                                                color: 'var(--text-muted)',
+                                                padding: '1rem 0',
+                                                textAlign: 'center',
+                                              }}
+                                            >
+                                              Chưa có segments cho transcript này.
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div>
+                                          <div
+                                            style={{
+                                              fontWeight: 800,
+                                              marginBottom: '0.45rem',
+                                              fontSize: '0.92rem',
+                                              letterSpacing: '0.01em',
+                                              color: '#d7c3ff',
+                                            }}
+                                          >
+                                            Tóm tắt cuộc trò chuyện
+                                          </div>
+                                          {hasSummaryText ? (
+                                            <div
+                                              style={{
+                                                marginBottom: '0.55rem',
+                                                border: '1px solid rgba(215,195,255,0.28)',
+                                                borderRadius: 12,
+                                                padding: '0.55rem 0.62rem',
+                                                background:
+                                                  'linear-gradient(180deg, rgba(215,195,255,0.12), rgba(215,195,255,0.03))',
+                                                color: 'var(--text-secondary)',
+                                              }}
+                                            >
+                                              <div style={{ fontWeight: 700, marginBottom: '0.2rem', color: '#e5d8ff' }}>
+                                                Nội dung tóm tắt
+                                              </div>
+                                              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
+                                                {transcriptByBooking.data!.summary!.summary}
+                                              </div>
+                                            </div>
+                                          ) : null}
+                                          {displayMindmap ? (
+                                            <div style={{ marginBottom: '0.6rem' }}>
+                                              <MindmapDiagram data={displayMindmap} />
+                                            </div>
+                                          ) : null}
+                                          {insightMindmap ? (
+                                            <div style={{ marginBottom: '0.6rem' }}>
+                                              <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
+                                                Insight (sentiment + report)
+                                              </div>
+                                              <MindmapDiagram data={insightMindmap} />
+                                            </div>
+                                          ) : null}
+                                          {keyPointsMindmap ? (
+                                            <div style={{ marginBottom: '0.6rem' }}>
+                                              <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Ý chính</div>
+                                              <MindmapDiagram data={keyPointsMindmap} />
+                                            </div>
+                                          ) : null}
+                                          {!hasSummaryText && !hasSummaryVisual ? (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                              Chưa có dữ liệu tóm tắt hoặc mindmap.
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      )}
+                                    </>
+                                  );
                                 })()}
                               </>
                             )}
