@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Users, UserCheck, Calendar, BookOpen, LogOut, Star } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, Calendar, BookOpen, LogOut, Star, Video } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -63,6 +63,9 @@ const Layout: React.FC = () => {
               <NavLink to="/mentor/reviews" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Star size={20} /> Đánh giá nhận được
               </NavLink>
+              <NavLink to="/mentor/meetings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Video size={20} /> Meetings
+              </NavLink>
             </>
           )}
 
@@ -81,6 +84,9 @@ const Layout: React.FC = () => {
               </NavLink>
               <NavLink to="/mentee/reviews" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <Star size={20} /> My Reviews
+              </NavLink>
+              <NavLink to="/mentee/meetings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Video size={20} /> My Meetings
               </NavLink>
             </>
           )}

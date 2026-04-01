@@ -8,3 +8,4 @@ export {
 export * from './booking';
 export * from './transcripts';
 export * from './reviews';
+export * from './meetings';

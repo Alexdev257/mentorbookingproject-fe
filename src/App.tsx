@@ -11,11 +11,13 @@ import SlotsPage from './pages/mentor/SlotsPage';
 import BookingRequestsPage from './pages/mentor/BookingRequestsPage';
 import MentorDashboardPage from './pages/mentor/MentorDashboardPage';
 import MentorReviewsPage from './pages/mentor/MentorReviewsPage';
+import MentorMeetingsPage from './pages/mentor/MentorMeetingsPage';
 import BrowseMentorsPage from './pages/mentee/BrowseMentorsPage';
 import BookMentorPage from './pages/mentee/BookMentorPage';
 import MyBookingsPage from './pages/mentee/MyBookingsPage';
 import MenteeDashboardPage from './pages/mentee/MenteeDashboardPage';
 import MyReviewsPage from './pages/mentee/MyReviewsPage';
+import MenteeMeetingsPage from './pages/mentee/MenteeMeetingsPage';
 import './App.css';
 import './admin-theme.css';
 
@@ -47,6 +49,7 @@ function App() {
             <Route path="mentor/slots" element={<ProtectedRoute allowedRoles={[2]}><SlotsPage /></ProtectedRoute>} />
             <Route path="mentor/bookings" element={<ProtectedRoute allowedRoles={[2]}><BookingRequestsPage /></ProtectedRoute>} />
             <Route path="mentor/reviews" element={<ProtectedRoute allowedRoles={[2]}><MentorReviewsPage /></ProtectedRoute>} />
+            <Route path="mentor/meetings" element={<ProtectedRoute allowedRoles={[2]}><MentorMeetingsPage /></ProtectedRoute>} />
             
             {/* Mentee Routes */}
             <Route path="mentee/dashboard" element={<ProtectedRoute allowedRoles={[3]}><MenteeDashboardPage /></ProtectedRoute>} />
@@ -54,6 +57,7 @@ function App() {
             <Route path="mentee/book/:mentorId" element={<ProtectedRoute allowedRoles={[3]}><BookMentorPage /></ProtectedRoute>} />
             <Route path="mentee/bookings" element={<ProtectedRoute allowedRoles={[3]}><MyBookingsPage /></ProtectedRoute>} />
             <Route path="mentee/reviews" element={<ProtectedRoute allowedRoles={[3]}><MyReviewsPage /></ProtectedRoute>} />
+            <Route path="mentee/meetings" element={<ProtectedRoute allowedRoles={[3]}><MenteeMeetingsPage /></ProtectedRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

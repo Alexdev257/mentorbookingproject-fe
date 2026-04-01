@@ -56,6 +56,12 @@ export const transcriptApi = {
     return response.data;
   },
 
+  /** Backend currently maps GET /transcripts/{id}. FE uses bookingId here by requirement. */
+  getByBookingId: async (bookingId: string): Promise<CommonResponse<TranscriptDetailDto>> => {
+    const response = await api.get(`/transcripts/${bookingId}`);
+    return response.data;
+  },
+
   getList: async (pageNumber = 1, pageSize = 20): Promise<CommonResponse<TranscriptListItemDto[]>> => {
     const response = await api.get(`/transcripts?pageNumber=${pageNumber}&pageSize=${pageSize}`);
     return response.data;

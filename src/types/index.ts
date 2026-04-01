@@ -100,3 +100,49 @@ export interface ReviewResponseDto {
   mentor?: ReviewUserDto;
   mentee?: ReviewUserDto;
 }
+
+export interface MeetingListItemDto {
+  id: string;
+  bookingId: string;
+  status: number;
+  statusLabel: string;
+  provider: string;
+  joinUrl?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  recordingsCount: number;
+}
+
+export interface MeetingRecordingDto {
+  id: string;
+  meetingId: string;
+  status: number;
+  storageUrl: string;
+  contentType?: string;
+  durationSeconds?: number;
+  sizeBytes?: number;
+  createdAt: string;
+}
+
+export interface MeetingDetailDto {
+  id: string;
+  bookingId: string;
+  status: number;
+  statusLabel: string;
+  provider: string;
+  joinUrl?: string;
+  hostUrl?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  recordings: MeetingRecordingDto[];
+}
+
+export interface MeetingJoinLinksDto {
+  meetingId: string;
+  bookingId: string;
+  provider: string;
+  joinUrl?: string;
+  hostUrl?: string;
+}

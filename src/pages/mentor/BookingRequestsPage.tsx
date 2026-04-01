@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../api/booking';
+import { meetingApi } from '../../api/meetings';
 import { userApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
-import type { BookingResponseDto } from '../../types';
+import type { BookingResponseDto, MeetingRecordingDto } from '../../types';
 import { Check, X, Calendar, Clock, User, Link as LinkIcon, Loader2, Inbox, Ban } from 'lucide-react';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
 import { BookingStatus } from '../../constants/bookingStatus';
@@ -46,6 +47,7 @@ const BookingRequestsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [menteeNames, setMenteeNames] = useState<Record<string, string>>({});
+  const [meetingByBooking, setMeetingByBooking] = useState<Record<string, { joinUrl?: string; recordings: MeetingRecordingDto[] }>>({});
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
 
@@ -122,6 +124,40 @@ const BookingRequestsPage: React.FC = () => {
       alive = false;
     };
   }, [bookings]);
+
+  useEffect(() => {
+    const targetBookingIds = bookings
+      .filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed)
+      .map((b) => b.id)
+      .filter((id) => meetingByBooking[id] === undefined);
+    if (!targetBookingIds.length) return;
+
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        targetBookingIds.map(async (bookingId) => {
+          try {
+            const [meetingRes, recordingsRes] = await Promise.all([
+              meetingApi.getMeetingByBookingId(bookingId),
+              meetingApi.getRecordingsByBookingId(bookingId),
+            ]);
+
+            const joinUrl = meetingRes.isSuccess ? meetingRes.data?.joinUrl : undefined;
+            const recordings = recordingsRes.isSuccess ? recordingsRes.data ?? [] : [];
+            return [bookingId, { joinUrl, recordings }] as const;
+          } catch {
+            return [bookingId, { joinUrl: undefined, recordings: [] }] as const;
+          }
+        })
+      );
+      if (cancelled) return;
+      setMeetingByBooking((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bookings, meetingByBooking]);
 
   const markersByDay = useMemo(() => {
     const map: Record<string, MonthCalMarker[]> = {};
@@ -332,9 +368,9 @@ const BookingRequestsPage: React.FC = () => {
                         </div>
                       ) : booking.status === BookingStatus.Confirmed ? (
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {booking.meetingLink ? (
+                          {(booking.meetingLink || meetingByBooking[booking.id]?.joinUrl) ? (
                             <a
-                              href={booking.meetingLink}
+                              href={booking.meetingLink || meetingByBooking[booking.id]?.joinUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="admin-btn-primary"
@@ -367,6 +403,28 @@ const BookingRequestsPage: React.FC = () => {
                             {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Ban size={16} />}
                             Hủy lịch
                           </button>
+                        </div>
+                      ) : booking.status === BookingStatus.Completed ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {meetingByBooking[booking.id]?.recordings?.[0]?.storageUrl ? (
+                            <a
+                              href={meetingByBooking[booking.id].recordings[0].storageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-btn-secondary"
+                              style={{
+                                padding: '0.5rem 0.85rem',
+                                fontSize: '0.8125rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                              }}
+                            >
+                              <LinkIcon size={15} /> Xem recording
+                            </a>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Chưa có recording</span>
+                          )}
                         </div>
                       ) : (
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>—</span>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../api/booking';
+import { meetingApi } from '../../api/meetings';
 import { userApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
-import type { BookingResponseDto } from '../../types';
+import type { BookingResponseDto, MeetingRecordingDto } from '../../types';
 import { BookingStatus } from '../../constants/bookingStatus';
 import { Calendar, Clock, User, Mail, Loader2, Star, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { MonthCalendar } from '../../components/calendar/MonthCalendar';
@@ -30,6 +31,7 @@ const MyBookingsPage: React.FC = () => {
   const [mentorNames, setMentorNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [meetingByBooking, setMeetingByBooking] = useState<Record<string, { joinUrl?: string; recordings: MeetingRecordingDto[] }>>({});
 
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
@@ -86,6 +88,39 @@ const MyBookingsPage: React.FC = () => {
       cancelled = true;
     };
   }, [bookings]);
+
+  useEffect(() => {
+    const targetBookingIds = bookings
+      .filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed)
+      .map((b) => b.id)
+      .filter((id) => meetingByBooking[id] === undefined);
+    if (!targetBookingIds.length) return;
+
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        targetBookingIds.map(async (bookingId) => {
+          try {
+            const [meetingRes, recordingsRes] = await Promise.all([
+              meetingApi.getMeetingByBookingId(bookingId),
+              meetingApi.getRecordingsByBookingId(bookingId),
+            ]);
+            const joinUrl = meetingRes.isSuccess ? meetingRes.data?.joinUrl : undefined;
+            const recordings = recordingsRes.isSuccess ? recordingsRes.data ?? [] : [];
+            return [bookingId, { joinUrl, recordings }] as const;
+          } catch {
+            return [bookingId, { joinUrl: undefined, recordings: [] }] as const;
+          }
+        })
+      );
+      if (cancelled) return;
+      setMeetingByBooking((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bookings, meetingByBooking]);
 
   const markersByDay = useMemo(() => {
     const map: Record<string, MonthCalMarker[]> = {};
@@ -243,8 +278,25 @@ const MyBookingsPage: React.FC = () => {
                       >
                         <Mail size={16} color="var(--brand-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
                         <span>
-                          Link tham gia cuộc họp đã được gửi qua email của bạn. Vui lòng kiểm tra hộp thư (kể cả thư mục spam).
+                          {booking.meetingLink || meetingByBooking[booking.id]?.joinUrl
+                            ? (
+                              <>
+                                Link tham gia: <a href={booking.meetingLink || meetingByBooking[booking.id]?.joinUrl} target="_blank" rel="noopener noreferrer">mở phòng họp</a>.
+                              </>
+                            )
+                            : 'Link tham gia cuộc họp đã được gửi qua email của bạn. Vui lòng kiểm tra hộp thư (kể cả thư mục spam).'}
                         </span>
+                      </div>
+                    )}
+                    {booking.status === BookingStatus.Completed && (
+                      <div style={{ marginTop: '0.75rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        {meetingByBooking[booking.id]?.recordings?.[0]?.storageUrl ? (
+                          <a href={meetingByBooking[booking.id].recordings[0].storageUrl} target="_blank" rel="noopener noreferrer">
+                            Xem recording buổi học
+                          </a>
+                        ) : (
+                          'Chưa có recording cho buổi này.'
+                        )}
                       </div>
                     )}
                   </div>
