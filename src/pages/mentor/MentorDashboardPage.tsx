@@ -5,7 +5,7 @@ import { bookingApi } from '../../api/booking';
 import { userApi } from '../../api/services';
 import type { SlotResponseDto, BookingResponseDto } from '../../types';
 import { BookingStatus } from '../../constants/bookingStatus';
-import { Calendar, Inbox, ChevronRight, Clock, Sparkles, Check, X, Loader2, User, Link as LinkIcon, Ban, Star } from 'lucide-react';
+import { Calendar, Inbox, ChevronRight, Clock, Sparkles, Check, X, Loader2, User, Link as LinkIcon, Ban, Star, CheckCircle2 } from 'lucide-react';
 
 const MentorDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -135,64 +135,112 @@ const MentorDashboardPage: React.FC = () => {
 
   return (
     <div className="admin-page">
-      <div className="admin-dash-hero">
-        <p className="admin-eyebrow" style={{ color: 'var(--success)' }}>
+      {/* Hero Banner */}
+      <div style={{
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid rgba(63,185,80,0.25)',
+        background: 'linear-gradient(135deg, rgba(63,185,80,0.1) 0%, rgba(13,17,23,0.6) 50%, rgba(88,166,255,0.08) 100%)',
+        padding: '2rem 2.25rem',
+        marginBottom: '1.75rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative glow */}
+        <div style={{
+          position: 'absolute', top: -60, right: -60,
+          width: 200, height: 200, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(63,185,80,0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <p className="admin-eyebrow" style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>
           Không gian mentor
         </p>
-        <h1 className="admin-title">Xin chào, {first}</h1>
-        <p className="admin-desc">
+        <h1 className="admin-title" style={{ marginBottom: '0.5rem' }}>Xin chào, {first} 👋</h1>
+        <p className="admin-desc" style={{ maxWidth: '36rem' }}>
           Sinh viên đặt lịch xong sẽ xuất hiện mục <strong>Yêu cầu chờ duyệt</strong> bên dưới và trong menu{' '}
           <strong>Duyệt booking</strong> — bấm <em>Chấp nhận</em> hoặc <em>Từ chối</em>.
         </p>
+        {!loading && (
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Sparkles size={15} color="var(--success)" />
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              {availableSlots} khung trống · {pendingRequests} chờ duyệt · {acceptedSessions} đã xác nhận
+            </span>
+          </div>
+        )}
       </div>
 
-      <div
-        className="admin-panel"
-        style={{
-          padding: '1.25rem 1.35rem',
-          marginBottom: '1.75rem',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '1rem',
-        }}
-      >
-        <div
-          className="admin-shortcut-icon"
-          style={{
-            background: 'linear-gradient(135deg, rgba(63,185,80,0.22) 0%, rgba(63,185,80,0.08) 100%)',
-          }}
-        >
-          <Sparkles size={26} color="var(--success)" />
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+        {/* Khung trống */}
+        <div style={{
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(63,185,80,0.3)',
+          background: 'linear-gradient(135deg, rgba(63,185,80,0.15) 0%, rgba(63,185,80,0.04) 100%)',
+          padding: '1.4rem 1.5rem',
+          display: 'flex', alignItems: 'center', gap: '1.1rem',
+          transition: 'var(--transition)',
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'rgba(63,185,80,0.18)',
+            border: '1px solid rgba(63,185,80,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Calendar size={24} color="#3fb950" />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em', color: 'rgba(63,185,80,0.75)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Khung trống</div>
+            <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#3fb950' }}>{loading ? '…' : availableSlots}</div>
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>Tóm tắt nhanh</h2>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            {loading
-              ? 'Đang tải số liệu…'
-              : `${availableSlots} khung giờ còn trống · ${pendingRequests} yêu cầu chờ duyệt · ${acceptedSessions} buổi đã xác nhận.`}
-          </p>
-        </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <div className="mentor-stat-card">
-          <div style={{ fontSize: '0.6875rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Khung trống
+        {/* Chờ duyệt */}
+        <div style={{
+          borderRadius: 'var(--radius-lg)',
+          border: `1px solid ${pendingRequests > 0 ? 'rgba(219,171,9,0.4)' : 'var(--glass-border)'}`,
+          background: pendingRequests > 0
+            ? 'linear-gradient(135deg, rgba(219,171,9,0.15) 0%, rgba(219,171,9,0.04) 100%)'
+            : 'rgba(13,17,23,0.45)',
+          padding: '1.4rem 1.5rem',
+          display: 'flex', alignItems: 'center', gap: '1.1rem',
+          transition: 'var(--transition)',
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'rgba(219,171,9,0.15)',
+            border: '1px solid rgba(219,171,9,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Inbox size={24} color="#dbab09" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.35rem', color: 'var(--success)' }}>{loading ? '…' : availableSlots}</div>
+          <div>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em', color: 'rgba(219,171,9,0.75)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Chờ duyệt</div>
+            <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: pendingRequests > 0 ? '#dbab09' : 'var(--text-primary)' }}>{loading ? '…' : pendingRequests}</div>
+          </div>
         </div>
-        <div className="mentor-stat-card">
-          <div style={{ fontSize: '0.6875rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Chờ duyệt
+
+        {/* Đã xác nhận */}
+        <div style={{
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(88,166,255,0.25)',
+          background: 'linear-gradient(135deg, rgba(88,166,255,0.12) 0%, rgba(88,166,255,0.03) 100%)',
+          padding: '1.4rem 1.5rem',
+          display: 'flex', alignItems: 'center', gap: '1.1rem',
+          transition: 'var(--transition)',
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'rgba(88,166,255,0.15)',
+            border: '1px solid rgba(88,166,255,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <CheckCircle2 size={24} color="#58a6ff" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.35rem', color: 'var(--warning)' }}>{loading ? '…' : pendingRequests}</div>
-        </div>
-        <div className="mentor-stat-card">
-          <div style={{ fontSize: '0.6875rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Đã xác nhận
+          <div>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em', color: 'rgba(88,166,255,0.75)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Đã xác nhận</div>
+            <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#58a6ff' }}>{loading ? '…' : acceptedSessions}</div>
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.35rem' }}>{loading ? '…' : acceptedSessions}</div>
         </div>
       </div>
 
@@ -383,73 +431,104 @@ const MentorDashboardPage: React.FC = () => {
         </div>
       )}
 
-      <p className="admin-eyebrow" style={{ marginBottom: '0.75rem', color: 'var(--success)' }}>
+      <p className="admin-eyebrow" style={{ marginBottom: '1rem', color: 'var(--success)' }}>
         Đi tới
       </p>
-      <div className="admin-shortcuts">
-        <Link to="/mentor/slots" className="mentor-shortcut-card">
-          <div
-            className="admin-shortcut-icon"
-            style={{
-              background: 'linear-gradient(135deg, rgba(88,166,255,0.2) 0%, rgba(88,166,255,0.06) 100%)',
-            }}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <Link to="/mentor/slots" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div style={{
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(88,166,255,0.25)',
+            background: 'linear-gradient(135deg, rgba(88,166,255,0.1) 0%, rgba(88,166,255,0.03) 100%)',
+            padding: '1.35rem 1.4rem',
+            display: 'flex', alignItems: 'center', gap: '1rem',
+            cursor: 'pointer',
+            transition: 'var(--transition)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(88,166,255,0.5)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(88,166,255,0.25)'; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
           >
-            <Calendar size={26} color="var(--brand-primary)" />
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(88,166,255,0.18)', border: '1px solid rgba(88,166,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Calendar size={26} color="#58a6ff" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.2rem', color: '#58a6ff' }}>Lịch trống</h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                Tạo hoặc gỡ khung giờ để sinh viên đặt lịch.
+              </p>
+            </div>
+            <ChevronRight size={20} color="rgba(88,166,255,0.6)" style={{ flexShrink: 0 }} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.2rem' }}>Lịch trống</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-              Tạo hoặc gỡ khung giờ để sinh viên có thể đặt lịch.
-            </p>
-          </div>
-          <ChevronRight size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
         </Link>
 
-        <Link to="/mentor/bookings" className="mentor-shortcut-card">
-          <div
-            className="admin-shortcut-icon"
-            style={{
-              background: 'linear-gradient(135deg, rgba(219,171,9,0.2) 0%, rgba(219,171,9,0.06) 100%)',
-            }}
+        <Link to="/mentor/bookings" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div style={{
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(219,171,9,0.28)',
+            background: 'linear-gradient(135deg, rgba(219,171,9,0.1) 0%, rgba(219,171,9,0.03) 100%)',
+            padding: '1.35rem 1.4rem',
+            display: 'flex', alignItems: 'center', gap: '1rem',
+            cursor: 'pointer',
+            transition: 'var(--transition)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(219,171,9,0.55)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(219,171,9,0.28)'; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
           >
-            <Inbox size={26} color="var(--warning)" />
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(219,171,9,0.15)', border: '1px solid rgba(219,171,9,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Inbox size={26} color="#dbab09" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.2rem', color: '#dbab09' }}>Duyệt booking</h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                Chấp nhận / từ chối; vào link họp hoặc hủy lịch.
+              </p>
+            </div>
+            {pendingRequests > 0 && (
+              <span style={{ flexShrink: 0, background: '#dbab09', color: '#000', borderRadius: 99, fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.6rem', minWidth: '1.6rem', textAlign: 'center' }}>
+                {pendingRequests}
+              </span>
+            )}
+            <ChevronRight size={20} color="rgba(219,171,9,0.6)" style={{ flexShrink: 0 }} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.2rem' }}>Duyệt booking</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-              Chấp nhận / từ chối yêu cầu; sau khi chấp nhận có link họp và có thể hủy lịch.
-            </p>
-          </div>
-          <ChevronRight size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
         </Link>
 
-        <Link to="/mentor/reviews" className="mentor-shortcut-card">
-          <div
-            className="admin-shortcut-icon"
-            style={{
-              background: 'linear-gradient(135deg, rgba(210,153,34,0.22) 0%, rgba(210,153,34,0.06) 100%)',
-            }}
+        <Link to="/mentor/reviews" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div style={{
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(245,198,24,0.28)',
+            background: 'linear-gradient(135deg, rgba(245,198,24,0.1) 0%, rgba(245,198,24,0.03) 100%)',
+            padding: '1.35rem 1.4rem',
+            display: 'flex', alignItems: 'center', gap: '1rem',
+            cursor: 'pointer',
+            transition: 'var(--transition)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,198,24,0.5)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,198,24,0.28)'; (e.currentTarget as HTMLDivElement).style.boxShadow = ''; }}
           >
-            <Star size={26} color="var(--warning)" />
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(245,198,24,0.15)', border: '1px solid rgba(245,198,24,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Star size={26} color="#f5c518" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.2rem', color: '#f5c518' }}>Đánh giá nhận được</h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                Xem sao và nhận xét từ sinh viên.
+              </p>
+            </div>
+            <ChevronRight size={20} color="rgba(245,198,24,0.6)" style={{ flexShrink: 0 }} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.2rem' }}>Đánh giá nhận được</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-              Xem sao và nhận xét từ sinh viên sau các buổi học.
-            </p>
-          </div>
-          <ChevronRight size={22} color="var(--text-muted)" style={{ flexShrink: 0 }} />
         </Link>
       </div>
 
-      <div className="admin-panel" style={{ marginTop: '2rem', padding: '1.35rem 1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.75rem' }}>
-          <Clock size={20} color="var(--text-secondary)" />
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Gợi ý</h3>
-        </div>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-          Luôn cập nhật lịch sớm và phản hồi yêu cầu trong 24–48h để trải nghiệm mentee tốt hơn. Dùng menu bên trái để chuyển giữa{' '}
-          <strong>Tổng quan</strong>, <strong>Lịch trống</strong>, <strong>Duyệt booking</strong> và <strong>Đánh giá nhận được</strong>.
+      <div style={{
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--glass-border)',
+        background: 'rgba(13,17,23,0.4)',
+        padding: '1.1rem 1.4rem',
+        display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+      }}>
+        <Clock size={18} color="var(--text-muted)" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+          Luôn cập nhật lịch sớm và phản hồi yêu cầu trong 24–48h để trải nghiệm mentee tốt hơn.
         </p>
       </div>
     </div>

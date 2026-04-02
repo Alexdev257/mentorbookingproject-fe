@@ -3,7 +3,7 @@ import { reviewApi } from '../../api/reviews';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ReviewResponseDto, ReviewUserDto } from '../../types';
 import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
-import { Loader2, Star, MessageSquare } from 'lucide-react';
+import { Loader2, Star, Quote, MessageSquare } from 'lucide-react';
 
 function personLabel(u?: ReviewUserDto): string {
   if (!u) return '—';
@@ -100,46 +100,66 @@ const MentorReviewsPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="admin-panel" style={{ marginBottom: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>{stats.avg.toFixed(2)}</div>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>Điểm trung bình / 5</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.35rem 0 0' }}>{stats.count} lượt đánh giá</p>
+          <div className="admin-panel" style={{ marginBottom: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', padding: '1.5rem 1.75rem' }}>
+            <div style={{ textAlign: 'center', minWidth: 90 }}>
+              <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg, #f5c518 0%, #e6a817 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                {stats.avg.toFixed(1)}
+              </div>
+              <div style={{ marginTop: '0.4rem' }}>
+                <StarDisplay rating={Math.round(stats.avg)} />
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>{stats.count} lượt đánh giá</p>
             </div>
-            <div style={{ flex: 1, minWidth: 200, maxWidth: 320 }}>
+            <div style={{ flex: 1, minWidth: 200, maxWidth: 340 }}>
               {[5, 4, 3, 2, 1].map((star) => {
                 const c = stats.dist[star - 1];
                 const pct = stats.count ? (c / stats.count) * 100 : 0;
                 return (
-                  <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', fontSize: '0.75rem' }}>
-                    <span style={{ width: '3ch', color: 'var(--text-muted)' }}>{star}★</span>
-                    <div style={{ flex: 1, height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--warning)', borderRadius: 99 }} />
+                  <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.45rem', fontSize: '0.8125rem' }}>
+                    <span style={{ width: '2.5ch', color: 'var(--text-secondary)', textAlign: 'right', fontWeight: 600 }}>{star}</span>
+                    <Star size={13} fill="var(--warning)" color="var(--warning)" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: star >= 4 ? 'var(--warning)' : star === 3 ? '#e09020' : 'rgba(248,81,73,0.7)', borderRadius: 99, transition: 'width 0.4s ease' }} />
                     </div>
-                    <span style={{ color: 'var(--text-muted)', width: '2ch' }}>{c}</span>
+                    <span style={{ color: 'var(--text-muted)', width: '2.5ch', fontSize: '0.75rem' }}>{c}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {reviews.map((r) => (
-              <div key={r.id} className="admin-panel" style={{ padding: '1.25rem 1.35rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            {reviews.map((r) => {
+              const borderColor = r.rating >= 4
+                ? 'rgba(63,185,80,0.5)'
+                : r.rating === 3
+                  ? 'rgba(219,171,9,0.5)'
+                  : 'rgba(248,81,73,0.45)';
+              return (
+                <div
+                  key={r.id}
+                  className="admin-panel"
+                  style={{
+                    padding: '1.25rem 1.4rem',
+                    borderLeft: `3px solid ${borderColor}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' }}>
+                    {/* Avatar */}
                     <div
                       style={{
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         borderRadius: '50%',
                         background: 'var(--bg-tertiary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 700,
+                        fontSize: '1.1rem',
                         flexShrink: 0,
                         overflow: 'hidden',
+                        border: '2px solid var(--glass-border)',
                       }}
                     >
                       {r.mentee?.avatarUrl ? (
@@ -148,27 +168,34 @@ const MentorReviewsPage: React.FC = () => {
                         personLabel(r.mentee).charAt(0).toUpperCase()
                       )}
                     </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{personLabel(r.mentee)}</div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                        <span style={{ fontWeight: 700 }}>{personLabel(r.mentee)}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <MessageSquare size={13} />
+                          Booking {r.bookingId.substring(0, 8)}…
+                        </span>
+                      </div>
                       <StarDisplay rating={r.rating} />
                       {r.comment ? (
-                        <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                          {r.comment}
-                        </p>
+                        <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                          <Quote size={15} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '0.15rem', opacity: 0.6 }} />
+                          <p style={{ margin: 0, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9375rem' }}>
+                            {r.comment}
+                          </p>
+                        </div>
                       ) : (
-                        <p style={{ margin: '0.75rem 0 0', fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        <p style={{ margin: '0.6rem 0 0', fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                           (Không có nhận xét)
                         </p>
                       )}
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <MessageSquare size={14} />
-                    Booking {r.bookingId.substring(0, 8)}…
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

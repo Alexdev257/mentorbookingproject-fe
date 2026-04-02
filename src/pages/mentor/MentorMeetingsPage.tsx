@@ -196,72 +196,105 @@ const MentorMeetingsPage: React.FC = () => {
           Chưa có booking đã xác nhận/hoàn thành để hiển thị meeting.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {rows.map((b) => {
             const bundle = meetingByBooking[b.id];
             const meeting = bundle?.meeting;
             const isFinished = meeting?.status === 2;
             const hostUrl = !isFinished ? meeting?.hostUrl : undefined;
             const recordings = bundle?.recordings ?? [];
+            const isCompleted = b.status === 4; // BookingStatus.Completed
             return (
-              <div key={b.id} className="admin-panel" style={{ padding: '1rem 1.15rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <div key={b.id} className="admin-panel" style={{ padding: 0, overflow: 'hidden' }}>
+                {/* Card header */}
+                <div style={{
+                  padding: '1rem 1.25rem',
+                  borderBottom: '1px solid var(--glass-border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                  background: isCompleted
+                    ? 'linear-gradient(90deg, rgba(63,185,80,0.06) 0%, transparent 60%)'
+                    : 'linear-gradient(90deg, rgba(88,166,255,0.06) 0%, transparent 60%)',
+                }}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>{b.topic || 'Mentoring session'}</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{b.topic || 'Mentoring session'}</span>
+                      <span className={`status-badge ${isCompleted ? 'status-active' : 'status-pending'}`}>
+                        {isCompleted ? 'Hoàn thành' : 'Đã xác nhận'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Calendar size={14} />
-                      {new Date(b.scheduleStart).toLocaleString('vi-VN')}
+                      {new Date(b.scheduleStart).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {hostUrl ? (
-                      <a href={hostUrl} target="_blank" rel="noopener noreferrer" className="admin-btn-primary" style={{ fontSize: '0.8125rem' }}>
+                      <a href={hostUrl} target="_blank" rel="noopener noreferrer" className="admin-btn-primary" style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }}>
                         <LinkIcon size={14} /> Vào Zoom (Host)
                       </a>
                     ) : (
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                        {isFinished ? 'Meeting đã kết thúc (ẩn URL Zoom).' : 'Chưa có host URL'}
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        {isFinished ? 'Meeting đã kết thúc' : 'Chưa có host URL'}
                       </span>
                     )}
                   </div>
                 </div>
-                <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                    Recording: <strong>{recordings.length}</strong>
+
+                {/* Recordings */}
+                <div style={{ padding: '1rem 1.25rem' }}>
+                  <div style={{
+                    fontSize: '0.6875rem', fontWeight: 800, textTransform: 'uppercase',
+                    letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '0.75rem',
+                  }}>
+                    Recordings ({recordings.length})
                   </div>
-                  {recordings.slice(0, 3).map((r) => {
-                    const t = transcriptByRecording[r.id];
-                    return (
-                      <div key={r.id} style={{ border: '1px solid var(--glass-border)', borderRadius: 10, padding: '0.75rem', background: 'rgba(255,255,255,0.02)' }}>
-                        <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <Video size={14} /> {new Date(r.createdAt).toLocaleString('vi-VN')} ({r.contentType || 'unknown'})
-                        </div>
-                        {isVideoMp4(r.contentType) ? (
-                          <video
-                            controls
-                            preload="metadata"
-                            src={r.storageUrl}
-                            style={{ width: '100%', maxHeight: 360, borderRadius: 8, background: '#000' }}
-                          />
-                        ) : null}
-                        <div style={{ marginTop: '0.6rem', fontSize: '0.8125rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                            <FileText size={14} /> Transcript
-                          </div>
-                          {!t || t.loading ? (
-                            <div style={{ color: 'var(--text-muted)' }}>Đang tải transcript…</div>
-                          ) : !t.found ? (
-                            <div style={{ color: 'var(--text-muted)' }}>Chưa có transcript cho recording này.</div>
-                          ) : (
-                            <div style={{ color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                              {t.summary ? <p style={{ margin: '0 0 0.45rem', color: 'var(--text-secondary)' }}><strong>Tóm tắt:</strong> {t.summary}</p> : null}
-                              {t.text ? t.text : 'Transcript trống.'}
+                  {recordings.length === 0 ? (
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>Chưa có recording.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                      {recordings.slice(0, 3).map((r) => {
+                        const t = transcriptByRecording[r.id];
+                        return (
+                          <div key={r.id} style={{ border: '1px solid var(--glass-border)', borderRadius: 10, overflow: 'hidden', background: 'rgba(255,255,255,0.02)' }}>
+                            <div style={{ padding: '0.6rem 0.85rem', borderBottom: '1px solid var(--glass-border)', fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.02)' }}>
+                              <Video size={13} />
+                              {new Date(r.createdAt).toLocaleString('vi-VN')}
+                              <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.contentType || 'unknown'}</span>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                            <div style={{ padding: '0.75rem 0.85rem' }}>
+                              {isVideoMp4(r.contentType) ? (
+                                <video controls preload="metadata" src={r.storageUrl} style={{ width: '100%', maxHeight: 340, borderRadius: 6, background: '#000', marginBottom: '0.75rem' }} />
+                              ) : null}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.8125rem', marginBottom: '0.4rem', fontWeight: 600 }}>
+                                <FileText size={14} /> Transcript
+                              </div>
+                              {!t || t.loading ? (
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <Loader2 size={14} className="animate-spin" /> Đang tải transcript…
+                                </div>
+                              ) : !t.found ? (
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>Chưa có transcript cho recording này.</div>
+                              ) : (
+                                <div style={{ fontSize: '0.875rem', lineHeight: 1.6 }}>
+                                  {t.summary ? (
+                                    <div style={{ marginBottom: '0.6rem', padding: '0.6rem 0.85rem', borderRadius: 8, background: 'rgba(88,166,255,0.07)', border: '1px solid rgba(88,166,255,0.15)' }}>
+                                      <strong style={{ color: 'var(--brand-primary)' }}>Tóm tắt:</strong>
+                                      <span style={{ color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>{t.summary}</span>
+                                    </div>
+                                  ) : null}
+                                  <p style={{ margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{t.text || 'Transcript trống.'}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             );

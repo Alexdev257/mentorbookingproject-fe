@@ -510,12 +510,14 @@
   border: 1px solid var(--glass-border);
   background: rgba(13, 17, 23, 0.45);
   backdrop-filter: blur(10px);
-  padding: 1.35rem 1.5rem;
+  padding: 1.25rem 1.35rem;
   transition: var(--transition);
 }
 
 .mentor-stat-card:hover {
-  border-color: rgba(63, 185, 80, 0.25);
+  border-color: rgba(63, 185, 80, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }
 
 .mentor-shortcut-card {
