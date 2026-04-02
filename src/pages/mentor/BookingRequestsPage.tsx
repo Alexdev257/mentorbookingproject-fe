@@ -1,43 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { bookingApi } from '../../api/booking';
-import { meetingApi } from '../../api/meetings';
-import { userApi } from '../../api/services';
-import { useAuth } from '../../contexts/AuthContext';
-import type { BookingResponseDto, MeetingRecordingDto } from '../../types';
-import { Check, X, Calendar, Clock, User, Link as LinkIcon, Loader2, Inbox, Ban } from 'lucide-react';
-import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
-import { BookingStatus } from '../../constants/bookingStatus';
-import { MonthCalendar } from '../../components/calendar/MonthCalendar';
-import type { MonthCalMarker } from '../../components/calendar/MonthCalendar';
-import { isSameLocalDay, startOfMonth, toLocalYmd } from '../../components/calendar/monthUtils';
+import React, { useState, useEffect, useMemo } from "react";
+import { bookingApi } from "../../api/booking";
+import { meetingApi } from "../../api/meetings";
+import { userApi } from "../../api/services";
+import { useAuth } from "../../contexts/AuthContext";
+import type { BookingResponseDto, MeetingRecordingDto } from "../../types";
+import { Check, X, Link as LinkIcon, Loader2, Inbox, Ban } from "lucide-react";
+import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { BookingStatus } from "../../constants/bookingStatus";
+import { MonthCalendar } from "../../components/calendar/MonthCalendar";
+import type { MonthCalMarker } from "../../components/calendar/MonthCalendar";
+import { isSameLocalDay, startOfMonth, toLocalYmd } from "../../components/calendar/monthUtils";
 
 const statusLabel = (s: number) => {
-  if (s === BookingStatus.Pending) return 'Chờ duyệt';
-  if (s === BookingStatus.Confirmed) return 'Đã xác nhận';
-  if (s === BookingStatus.Rejected) return 'Từ chối';
-  if (s === BookingStatus.Cancelled) return 'Đã hủy';
-  if (s === BookingStatus.Completed) return 'Hoàn thành';
-  return 'Khác';
+  if (s === BookingStatus.Pending) return "Chờ duyệt";
+  if (s === BookingStatus.Confirmed) return "Đã xác nhận";
+  if (s === BookingStatus.Rejected) return "Từ chối";
+  if (s === BookingStatus.Cancelled) return "Đã hủy";
+  if (s === BookingStatus.Completed) return "Hoàn thành";
+  return "Khác";
 };
 
 const statusBadgeClass = (s: number) => {
-  if (s === BookingStatus.Pending) return 'status-pending';
-  if (s === BookingStatus.Confirmed || s === BookingStatus.Completed) return 'status-active';
-  return 'status-inactive';
+  if (s === BookingStatus.Pending) return "status-pending";
+  if (s === BookingStatus.Confirmed || s === BookingStatus.Completed) return "status-active";
+  return "status-inactive";
 };
 
 function bookingMarker(status: number): { color: string; title: string } {
   switch (status) {
     case BookingStatus.Pending:
-      return { color: 'var(--warning, #dbab09)', title: 'Chờ duyệt' };
+      return { color: "var(--warning, #dbab09)", title: "Chờ duyệt" };
     case BookingStatus.Confirmed:
     case BookingStatus.Completed:
-      return { color: 'var(--success, #3fb950)', title: status === BookingStatus.Completed ? 'Hoàn thành' : 'Đã xác nhận' };
+      return {
+        color: "var(--success, #3fb950)",
+        title: status === BookingStatus.Completed ? "Hoàn thành" : "Đã xác nhận",
+      };
     case BookingStatus.Rejected:
     case BookingStatus.Cancelled:
-      return { color: 'var(--text-muted, #8b949e)', title: status === BookingStatus.Rejected ? 'Từ chối' : 'Đã hủy' };
+      return { color: "var(--text-muted, #8b949e)", title: status === BookingStatus.Rejected ? "Từ chối" : "Đã hủy" };
     default:
-      return { color: '#888', title: 'Khác' };
+      return { color: "#888", title: "Khác" };
   }
 }
 
@@ -47,10 +50,18 @@ const BookingRequestsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [menteeNames, setMenteeNames] = useState<Record<string, string>>({});
-  const [meetingByBooking, setMeetingByBooking] = useState<Record<string, { joinUrl?: string; recordings: MeetingRecordingDto[] }>>({});
+  const [meetingByBooking, setMeetingByBooking] = useState<
+    Record<string, { joinUrl?: string; recordings: MeetingRecordingDto[] }>
+  >({});
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Số lượng dòng trên mỗi trang (bạn có thể đổi thành 5, 10 tùy ý)
 
+  // THÊM: Reset về trang 1 khi đổi ngày lọc
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedFilterDate]);
   const fetchBookings = async () => {
     if (!user) {
       setLoading(false);
@@ -62,7 +73,7 @@ const BookingRequestsPage: React.FC = () => {
         setBookings(response.data.items);
       }
     } catch (err) {
-      console.error('Failed to fetch bookings:', err);
+      console.error("Failed to fetch bookings:", err);
     } finally {
       setLoading(false);
     }
@@ -78,9 +89,19 @@ const BookingRequestsPage: React.FC = () => {
         setBookings([]);
       }
     } catch (err) {
-      console.error('Failed to refetch bookings:', err);
+      console.error("Failed to refetch bookings:", err);
     }
   };
+
+  const displayedBookings = useMemo(() => {
+    if (!selectedFilterDate) return bookings;
+    return bookings.filter((b) => isSameLocalDay(b.scheduleStart, selectedFilterDate));
+  }, [bookings, selectedFilterDate]);
+
+  // THÊM: Tính toán dữ liệu cho trang hiện tại
+  const totalItems = displayedBookings.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedBookings = displayedBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     setLoading(true);
@@ -115,8 +136,8 @@ const BookingRequestsPage: React.FC = () => {
           } catch {
             /* ignore */
           }
-          return [id, 'Sinh viên'] as const;
-        })
+          return [id, "Sinh viên"] as const;
+        }),
       );
       if (alive) setMenteeNames(Object.fromEntries(entries));
     })();
@@ -143,12 +164,12 @@ const BookingRequestsPage: React.FC = () => {
             ]);
 
             const joinUrl = meetingRes.isSuccess ? meetingRes.data?.joinUrl : undefined;
-            const recordings = recordingsRes.isSuccess ? recordingsRes.data ?? [] : [];
+            const recordings = recordingsRes.isSuccess ? (recordingsRes.data ?? []) : [];
             return [bookingId, { joinUrl, recordings }] as const;
           } catch {
             return [bookingId, { joinUrl: undefined, recordings: [] }] as const;
           }
-        })
+        }),
       );
       if (cancelled) return;
       setMeetingByBooking((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
@@ -170,41 +191,36 @@ const BookingRequestsPage: React.FC = () => {
     return map;
   }, [bookings]);
 
-  const displayedBookings = useMemo(() => {
-    if (!selectedFilterDate) return bookings;
-    return bookings.filter((b) => isSameLocalDay(b.scheduleStart, selectedFilterDate));
-  }, [bookings, selectedFilterDate]);
-
-  const handleAction = async (id: string, action: 'accept' | 'reject') => {
+  const handleAction = async (id: string, action: "accept" | "reject") => {
     setProcessingId(id);
     try {
-      const response = action === 'accept' ? await bookingApi.acceptBooking(id) : await bookingApi.rejectBooking(id);
+      const response = action === "accept" ? await bookingApi.acceptBooking(id) : await bookingApi.rejectBooking(id);
       if (response.isSuccess) {
         await fetchBookings();
       } else {
-        window.alert(response.message || (action === 'accept' ? 'Chấp nhận thất bại' : 'Từ chối thất bại'));
+        window.alert(response.message || (action === "accept" ? "Chấp nhận thất bại" : "Từ chối thất bại"));
       }
     } catch (err) {
       console.error(`Failed to ${action} booking:`, err);
-      window.alert('Lỗi mạng hoặc máy chủ.');
+      window.alert("Lỗi mạng hoặc máy chủ.");
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleCancelAccepted = async (id: string) => {
-    if (!window.confirm('Hủy buổi đã xác nhận? Slot sẽ được mở lại cho sinh viên khác.')) return;
+    if (!window.confirm("Hủy buổi đã xác nhận? Slot sẽ được mở lại cho sinh viên khác.")) return;
     setProcessingId(id);
     try {
       const response = await bookingApi.cancelBooking(id);
       if (response.isSuccess) {
         await fetchBookings();
       } else {
-        window.alert(response.message || 'Hủy lịch thất bại');
+        window.alert(response.message || "Hủy lịch thất bại");
       }
     } catch (err) {
-      console.error('Failed to cancel booking:', err);
-      window.alert('Lỗi mạng hoặc máy chủ.');
+      console.error("Failed to cancel booking:", err);
+      window.alert("Lỗi mạng hoặc máy chủ.");
     } finally {
       setProcessingId(null);
     }
@@ -217,224 +233,330 @@ const BookingRequestsPage: React.FC = () => {
       <AdminPageHeader
         eyebrow="Mentor"
         title="Yêu cầu đặt lịch"
-        description="Đây là trang duyệt booking: Chấp nhận / Từ chối khi còn chờ; sau khi chấp nhận có thể vào link họp hoặc Hủy buổi nếu cần đổi kế hoạch."
-        actions={<span className="admin-chip">{loading ? '…' : `${pendingCount} chờ xử lý`}</span>}
+        description="Quản lý và duyệt lịch hẹn. Chấp nhận/Từ chối yêu cầu, truy cập phòng họp hoặc hủy lịch khi có thay đổi kế hoạch."
+        actions={
+          <span className="admin-chip" style={{ background: "#fef3c7", color: "#0000FF", border: "1px solid #fde68a" }}>
+            {loading ? "…" : `${pendingCount} chờ xử lý`}
+          </span>
+        }
       />
 
-      <div className="admin-panel" style={{ padding: '1rem 1.15rem', marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.85rem' }}>
-          <div style={{ fontWeight: 750 }}>Lịch booking</div>
-          {selectedFilterDate ? (
-            <button type="button" className="admin-btn-secondary" style={{ fontSize: '0.8125rem', padding: '0.45rem 0.85rem' }} onClick={() => setSelectedFilterDate(null)}>
-              Hiển thị tất cả ngày
-            </button>
-          ) : null}
-        </div>
-        <MonthCalendar
-          visibleMonth={visibleMonth}
-          onVisibleMonthChange={(d) => setVisibleMonth(startOfMonth(d))}
-          selectedDate={selectedFilterDate}
-          onSelectDate={(d) => {
-            const x = new Date(d);
-            x.setHours(0, 0, 0, 0);
-            setSelectedFilterDate(x);
-            setVisibleMonth(startOfMonth(x));
-          }}
-          markersByDay={markersByDay}
-        />
-        {selectedFilterDate ? (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.85rem' }}>
-            Đang lọc: <strong>{selectedFilterDate.toLocaleDateString('vi-VN')}</strong> — {displayedBookings.length} dòng
-          </p>
-        ) : null}
-      </div>
-
-      <div className="admin-panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="admin-table-scroll">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Sinh viên</th>
-                <th>Lịch hẹn</th>
-                <th>Nội dung</th>
-                <th>Trạng thái</th>
-                <th style={{ minWidth: 140 }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="admin-skeleton" style={{ padding: '2.5rem' }}>
-                      <div className="admin-skeleton-bar" />
-                      <div className="admin-skeleton-bar" style={{ maxWidth: 320 }} />
-                    </div>
-                  </td>
-                </tr>
-              ) : displayedBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="admin-empty">
-                      <div className="admin-empty-icon">
-                        <Inbox size={28} />
-                      </div>
-                      <p style={{ fontWeight: 600 }}>Chưa có yêu cầu</p>
-                      <p style={{ fontSize: '0.875rem', marginTop: '0.35rem' }}>
-                        {selectedFilterDate
-                          ? 'Không có booking trong ngày này. Chọn ngày khác hoặc bấm “Hiển thị tất cả ngày”.'
-                          : 'Khi sinh viên đặt lịch với bạn, hàng sẽ xuất hiện tại đây.'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                displayedBookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div className="admin-avatar" style={{ width: 38, height: 38 }}>
-                          <User size={18} color="var(--text-secondary)" />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 650 }}>{menteeNames[booking.menteeId] ?? '…'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID mentee</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.875rem' }}>
-                        <Calendar size={15} color="var(--text-muted)" />
-                        {new Date(booking.scheduleStart).toLocaleDateString('vi-VN')}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '0.8125rem' }}>
-                        <Clock size={14} />
-                        {new Date(booking.scheduleStart).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} —{' '}
-                        {new Date(booking.scheduleEnd).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{booking.topic || '—'}</div>
-                      {booking.notes ? (
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.2rem', maxWidth: 280 }}>{booking.notes}</div>
-                      ) : null}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                        {booking.priceAmount > 0 ? `${booking.priceAmount.toLocaleString('vi-VN')} ${booking.currency}` : ''}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${statusBadgeClass(booking.status)}`}>
-                        {statusLabel(booking.status)}
-                      </span>
-                    </td>
-                    <td>
-                        {booking.status === BookingStatus.Pending ? (
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            className="admin-btn-primary"
-                            style={{
-                              padding: '0.5rem 0.85rem',
-                              fontSize: '0.8125rem',
-                              background: 'linear-gradient(135deg, #3fb950 0%, #238636 100%)',
-                              boxShadow: '0 2px 12px rgba(63,185,80,0.25)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                            }}
-                            onClick={() => handleAction(booking.id, 'accept')}
-                            disabled={processingId === booking.id}
-                          >
-                            {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Check size={17} />}
-                            Chấp nhận
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-btn-secondary"
-                            style={{
-                              padding: '0.5rem 0.85rem',
-                              fontSize: '0.8125rem',
-                              borderColor: 'rgba(248,81,73,0.4)',
-                              color: '#ff8b87',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                            }}
-                            onClick={() => handleAction(booking.id, 'reject')}
-                            disabled={processingId === booking.id}
-                          >
-                            <X size={17} />
-                            Từ chối
-                          </button>
-                        </div>
-                      ) : booking.status === BookingStatus.Confirmed ? (
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {(booking.meetingLink || meetingByBooking[booking.id]?.joinUrl) ? (
-                            <a
-                              href={booking.meetingLink || meetingByBooking[booking.id]?.joinUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="admin-btn-primary"
-                              style={{
-                                padding: '0.5rem 0.85rem',
-                                fontSize: '0.8125rem',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                              }}
-                            >
-                              <LinkIcon size={15} /> Vào họp
-                            </a>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="admin-btn-secondary"
-                            style={{
-                              padding: '0.5rem 0.85rem',
-                              fontSize: '0.8125rem',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              borderColor: 'rgba(219,171,9,0.45)',
-                              color: 'var(--warning)',
-                            }}
-                            onClick={() => void handleCancelAccepted(booking.id)}
-                            disabled={processingId === booking.id}
-                          >
-                            {processingId === booking.id ? <Loader2 className="animate-spin" size={16} /> : <Ban size={16} />}
-                            Hủy lịch
-                          </button>
-                        </div>
-                      ) : booking.status === BookingStatus.Completed ? (
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {meetingByBooking[booking.id]?.recordings?.[0]?.storageUrl ? (
-                            <a
-                              href={meetingByBooking[booking.id].recordings[0].storageUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="admin-btn-secondary"
-                              style={{
-                                padding: '0.5rem 0.85rem',
-                                fontSize: '0.8125rem',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                              }}
-                            >
-                              <LinkIcon size={15} /> Xem recording
-                            </a>
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>Chưa có recording</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+      <div className="bookings-dashboard-layout">
+        {/* ================= CỘT TRÁI: BỘ LỌC LỊCH (Đã ép màu trắng) ================= */}
+        <div>
+          <div
+            className="admin-panel"
+            style={{
+              padding: "1.5rem",
+              position: "sticky",
+              top: "1.5rem",
+              backgroundColor: "#ffffff" /* Ép màu nền trắng */,
+              color: "#334155" /* Ép màu chữ tối */,
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                marginBottom: "1.25rem",
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>Lịch & Bộ lọc</div>
+              {selectedFilterDate && (
+                <button
+                  type="button"
+                  className="admin-btn-secondary"
+                  style={{ fontSize: "0.75rem", padding: "0.35rem 0.65rem" }}
+                  onClick={() => setSelectedFilterDate(null)}
+                >
+                  Xóa lọc
+                </button>
               )}
-            </tbody>
-          </table>
+            </div>
+
+            <MonthCalendar
+              visibleMonth={visibleMonth}
+              onVisibleMonthChange={(d) => setVisibleMonth(startOfMonth(d))}
+              selectedDate={selectedFilterDate}
+              onSelectDate={(d) => {
+                const x = new Date(d);
+                x.setHours(0, 0, 0, 0);
+                setSelectedFilterDate(x);
+                setVisibleMonth(startOfMonth(x));
+              }}
+              markersByDay={markersByDay}
+            />
+
+            <div
+              style={{
+                marginTop: "1.5rem",
+                paddingTop: "1.25rem",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.8125rem",
+                color: "#64748b",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#dbab09" }}></span> Chờ duyệt
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3fb950" }}></span> Đã xác nhận /
+                Hoàn thành
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#8b949e" }}></span> Đã hủy / Từ
+                chối
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= CỘT PHẢI: BẢNG DANH SÁCH & PHÂN TRANG ================= */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#334155" }}>
+              {selectedFilterDate
+                ? `Lịch hẹn ngày ${selectedFilterDate.toLocaleDateString("vi-VN")}`
+                : "Tất cả lịch hẹn"}
+            </h3>
+            <span style={{ fontSize: "0.875rem", color: "#64748b", fontWeight: 500 }}>Tổng: {totalItems} kết quả</span>
+          </div>
+
+          <div
+            className="admin-panel"
+            style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid #e2e8f0" }}
+          >
+            <div className="admin-table-scroll" style={{ overflowX: "auto" }}>
+              <table className="admin-table" style={{ width: "100%", minWidth: "700px" }}>
+                <thead style={{ background: "#f8fafc" }}>
+                  <tr>
+                    <th>Sinh viên</th>
+                    <th>Thời gian</th>
+                    <th>Nội dung</th>
+                    <th>Trạng thái</th>
+                    <th style={{ minWidth: 140 }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: "2rem" }}>
+                        <div className="admin-skeleton" style={{ height: "40px", marginBottom: "10px" }} />
+                        <div className="admin-skeleton" style={{ height: "40px", marginBottom: "10px" }} />
+                        <div className="admin-skeleton" style={{ height: "40px" }} />
+                      </td>
+                    </tr>
+                  ) : totalItems === 0 ? (
+                    <tr>
+                      <td colSpan={7}>
+                        <div className="admin-empty" style={{ padding: "3rem 0" }}>
+                          <div className="admin-empty-icon">
+                            <Inbox size={28} />
+                          </div>
+                          <p style={{ fontWeight: 600 }}>Chưa có yêu cầu</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedBookings.map((booking) => (
+                      <tr key={booking.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td>
+                          <div style={{ fontWeight: 650, color: "#1e293b" }}>
+                            {menteeNames[booking.menteeId] ?? "…"}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                            ID: {booking.menteeId.substring(0, 8)}...
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                            {new Date(booking.scheduleStart).toLocaleDateString("vi-VN")}
+                          </div>
+                          <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>
+                            {new Date(booking.scheduleStart).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            -{" "}
+                            {new Date(booking.scheduleEnd).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>{booking.topic || "—"}</div>
+                          {booking.priceAmount > 0 && (
+                            <div
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "#0f172a",
+                                background: "#f1f5f9",
+                                padding: "0.1rem 0.4rem",
+                                borderRadius: "4px",
+                                display: "inline-block",
+                                marginTop: "0.25rem",
+                              }}
+                            >
+                              {booking.priceAmount.toLocaleString("vi-VN")} {booking.currency}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`status-badge ${statusBadgeClass(booking.status)}`}>
+                            {statusLabel(booking.status)}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                            {booking.status === BookingStatus.Pending && (
+                              <>
+                                <button
+                                  className="admin-btn-primary"
+                                  style={{
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    background: "#10b981",
+                                    border: "none",
+                                  }}
+                                  onClick={() => handleAction(booking.id, "accept")}
+                                  disabled={processingId === booking.id}
+                                >
+                                  {processingId === booking.id ? (
+                                    <Loader2 className="animate-spin" size={14} />
+                                  ) : (
+                                    <Check size={14} />
+                                  )}{" "}
+                                  Duyệt
+                                </button>
+                                <button
+                                  className="admin-btn-secondary"
+                                  style={{
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    color: "#ef4444",
+                                    borderColor: "#fca5a5",
+                                  }}
+                                  onClick={() => handleAction(booking.id, "reject")}
+                                  disabled={processingId === booking.id}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </>
+                            )}
+
+                            {booking.status === BookingStatus.Confirmed && (
+                              <>
+                                {(booking.meetingLink || meetingByBooking[booking.id]?.joinUrl) && (
+                                  <a
+                                    href={booking.meetingLink || meetingByBooking[booking.id]?.joinUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="admin-btn-primary"
+                                    style={{ padding: "0.35rem 0.6rem", fontSize: "0.75rem" }}
+                                  >
+                                    <LinkIcon size={14} /> Vào họp
+                                  </a>
+                                )}
+                                <button
+                                  className="admin-btn-secondary"
+                                  style={{
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    color: "#d97706",
+                                    borderColor: "#fde047",
+                                  }}
+                                  onClick={() => void handleCancelAccepted(booking.id)}
+                                  disabled={processingId === booking.id}
+                                >
+                                  {processingId === booking.id ? (
+                                    <Loader2 className="animate-spin" size={14} />
+                                  ) : (
+                                    <Ban size={14} />
+                                  )}{" "}
+                                  Hủy
+                                </button>
+                              </>
+                            )}
+
+                            {booking.status === BookingStatus.Completed &&
+                              meetingByBooking[booking.id]?.recordings?.[0]?.storageUrl && (
+                                <a
+                                  href={meetingByBooking[booking.id].recordings[0].storageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="admin-btn-secondary"
+                                  style={{ padding: "0.35rem 0.6rem", fontSize: "0.75rem" }}
+                                >
+                                  <LinkIcon size={14} /> Xem Record
+                                </a>
+                              )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "1rem",
+                  borderTop: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                }}
+              >
+                <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                  Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalItems)}{" "}
+                  trong số {totalItems}
+                </span>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    className="admin-btn-secondary"
+                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.85rem" }}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Trước
+                  </button>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "0 0.5rem",
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      color: "#334155",
+                    }}
+                  >
+                    {currentPage} / {totalPages}
+                  </div>
+                  <button
+                    className="admin-btn-secondary"
+                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.85rem" }}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

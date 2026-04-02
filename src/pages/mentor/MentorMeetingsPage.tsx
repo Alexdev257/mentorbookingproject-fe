@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { bookingApi } from '../../api/booking';
-import { meetingApi } from '../../api/meetings';
-import { transcriptApi } from '../../api/transcripts';
-import { useAuth } from '../../contexts/AuthContext';
-import type { BookingResponseDto, MeetingDetailDto, MeetingRecordingDto } from '../../types';
-import { BookingStatus } from '../../constants/bookingStatus';
-import { AdminPageHeader } from '../../components/admin/AdminPageHeader';
-import { Calendar, Link as LinkIcon, Loader2, Video, FileText } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import { bookingApi } from "../../api/booking";
+import { meetingApi } from "../../api/meetings";
+import { transcriptApi } from "../../api/transcripts";
+import { useAuth } from "../../contexts/AuthContext";
+import type { BookingResponseDto, MeetingDetailDto, MeetingRecordingDto } from "../../types";
+import { BookingStatus } from "../../constants/bookingStatus";
+import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
+import { Calendar, Link as LinkIcon, Loader2, Video, FileText, Inbox } from "lucide-react";
 
 type MeetingBundle = {
   meeting?: MeetingDetailDto;
@@ -21,27 +21,35 @@ type TranscriptViewState = {
 };
 
 function isVideoMp4(contentType?: string): boolean {
-  return normalize(contentType) === 'video/mp4';
+  return normalize(contentType) === "video/mp4";
 }
 
 function normalize(s?: string): string {
-  return (s ?? '').trim().toLowerCase();
+  return (s ?? "").trim().toLowerCase();
 }
 
-function extractTranscriptText(detail: { cleanText?: string; rawText?: string; segments?: Array<{ text?: string }> }): string | undefined {
+function extractTranscriptText(detail: {
+  cleanText?: string;
+  rawText?: string;
+  segments?: Array<{ text?: string }>;
+}): string | undefined {
   if (detail.cleanText?.trim()) return detail.cleanText.trim();
   if (detail.rawText?.trim()) return detail.rawText.trim();
   if (detail.segments?.length) {
-    const text = detail.segments.map((s) => s.text?.trim()).filter(Boolean).join(' ');
+    const text = detail.segments
+      .map((s) => s.text?.trim())
+      .filter(Boolean)
+      .join(" ");
     return text || undefined;
   }
   return undefined;
 }
 
 function extractSummary(summary: unknown): string | undefined {
-  if (!summary || typeof summary !== 'object') return undefined;
-  const value = (summary as { summary?: string; Summary?: string }).summary ?? (summary as { Summary?: string }).Summary;
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  if (!summary || typeof summary !== "object") return undefined;
+  const value =
+    (summary as { summary?: string; Summary?: string }).summary ?? (summary as { Summary?: string }).Summary;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 const MentorMeetingsPage: React.FC = () => {
@@ -60,7 +68,7 @@ const MentorMeetingsPage: React.FC = () => {
     void (async () => {
       try {
         const bookingRes = await bookingApi.getMentorBookings(user.id, 1, 80);
-        const rows = bookingRes.isSuccess ? bookingRes.data?.items ?? [] : [];
+        const rows = bookingRes.isSuccess ? (bookingRes.data?.items ?? []) : [];
         if (cancelled) return;
         setBookings(rows);
 
@@ -79,13 +87,13 @@ const MentorMeetingsPage: React.FC = () => {
                 bookingId,
                 {
                   meeting: meetingRes.isSuccess ? meetingRes.data : undefined,
-                  recordings: recordingsRes.isSuccess ? recordingsRes.data ?? [] : [],
+                  recordings: recordingsRes.isSuccess ? (recordingsRes.data ?? []) : [],
                 },
               ] as const;
             } catch {
               return [bookingId, { meeting: undefined, recordings: [] }] as const;
             }
-          })
+          }),
         );
         if (cancelled) return;
         setMeetingByBooking(Object.fromEntries(entries));
@@ -100,7 +108,7 @@ const MentorMeetingsPage: React.FC = () => {
 
   const rows = useMemo(
     () => bookings.filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed),
-    [bookings]
+    [bookings],
   );
 
   useEffect(() => {
@@ -114,18 +122,18 @@ const MentorMeetingsPage: React.FC = () => {
     void (async () => {
       try {
         const listRes = await transcriptApi.getList(1, 100);
-        const list = listRes.isSuccess ? listRes.data ?? [] : [];
+        const list = listRes.isSuccess ? (listRes.data ?? []) : [];
         if (cancelled) return;
 
         for (const recording of unresolved) {
           if (!isVideoMp4(recording.contentType)) {
             try {
               const res = await fetch(recording.storageUrl);
-              const text = res.ok ? (await res.text()).trim() : '';
+              const text = res.ok ? (await res.text()).trim() : "";
               if (!cancelled) {
                 setTranscriptByRecording((prev) => ({
                   ...prev,
-                  [recording.id]: { loading: false, found: true, text: text || 'Transcript trống.' },
+                  [recording.id]: { loading: false, found: true, text: text || "Transcript trống." },
                 }));
               }
             } catch {
@@ -140,7 +148,10 @@ const MentorMeetingsPage: React.FC = () => {
             const title = normalize(t.title);
             const rid = normalize(recording.id);
             const shortId = rid.slice(0, 8);
-            const fileName = normalize(decodeURIComponent(recording.storageUrl.split('/').pop() ?? '')).replace(/\.[a-z0-9]+$/, '');
+            const fileName = normalize(decodeURIComponent(recording.storageUrl.split("/").pop() ?? "")).replace(
+              /\.[a-z0-9]+$/,
+              "",
+            );
             return title.includes(rid) || title.includes(shortId) || (fileName && title.includes(fileName));
           });
 
@@ -179,89 +190,345 @@ const MentorMeetingsPage: React.FC = () => {
   }, [meetingByBooking, transcriptByRecording]);
 
   return (
-    <div className="admin-page">
+    <div className="admin-page" style={{ paddingBottom: "3rem" }}>
       <AdminPageHeader
         eyebrow="Mentor"
         title="Meetings & Recordings"
-        description="Xem trực tiếp recording và transcript ngay trên trang, không cần mở link ngoài."
-        actions={<span className="admin-chip">{loading ? '…' : `${rows.length} meeting`}</span>}
+        description="Xem trực tiếp bản ghi hình (recording) và nội dung họp (transcript) ngay trên trang, không cần mở link ngoài."
+        actions={
+          <span
+            style={{
+              background: "#e0e7ff",
+              color: "#4f46e5",
+              padding: "0.4rem 0.8rem",
+              borderRadius: "99px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              border: "1px solid #c7d2fe",
+            }}
+          >
+            {loading ? "Đang tải…" : `Tổng cộng ${rows.length} meeting`}
+          </span>
+        }
       />
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '4rem' }}>
-          <Loader2 className="animate-spin" size={36} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "5rem 0",
+            color: "#64748b",
+          }}
+        >
+          <Loader2 className="animate-spin" size={42} color="#3b82f6" style={{ marginBottom: "1rem" }} />
+          <p>Đang đồng bộ dữ liệu meeting...</p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="admin-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          Chưa có booking đã xác nhận/hoàn thành để hiển thị meeting.
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px dashed #cbd5e1",
+            borderRadius: "12px",
+            padding: "4rem 2rem",
+            textAlign: "center",
+          }}
+        >
+          <Inbox size={50} color="#94a3b8" style={{ margin: "0 auto 1rem", opacity: 0.8 }} />
+          <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#334155", marginBottom: "0.5rem" }}>
+            Chưa có phòng họp nào
+          </h3>
+          <p style={{ color: "#64748b", maxWidth: "400px", margin: "0 auto", fontSize: "0.95rem" }}>
+            Chưa có lịch hẹn nào được xác nhận hoặc hoàn thành để hiển thị thông tin meeting.
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           {rows.map((b) => {
             const bundle = meetingByBooking[b.id];
             const meeting = bundle?.meeting;
             const isFinished = meeting?.status === 2;
             const hostUrl = !isFinished ? meeting?.hostUrl : undefined;
             const recordings = bundle?.recordings ?? [];
+            const isCompleted = b.status === 4; // BookingStatus.Completed
+
             return (
-              <div key={b.id} className="admin-panel" style={{ padding: '1rem 1.15rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <div
+                key={b.id}
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                  overflow: "hidden",
+                }}
+              >
+                {/* ---------------- CARD HEADER ---------------- */}
+                <div
+                  style={{
+                    padding: "1.25rem 1.5rem",
+                    borderBottom: "1px solid #e2e8f0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                    gap: "1rem",
+                    background: isCompleted ? "#f0fdf4" : "#f0f9ff", // Màu nền header tùy trạng thái
+                  }}
+                >
                   <div>
-                    <div style={{ fontWeight: 700 }}>{b.topic || 'Mentoring session'}</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Calendar size={14} />
-                      {new Date(b.scheduleStart).toLocaleString('vi-VN')}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                      <span style={{ fontWeight: 700, fontSize: "1.1rem", color: "#0f172a" }}>
+                        {b.topic || "Mentoring session"}
+                      </span>
+                      <span
+                        style={{
+                          padding: "0.2rem 0.6rem",
+                          borderRadius: "9999px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          backgroundColor: isCompleted ? "#d1fae5" : "#dbeafe",
+                          color: isCompleted ? "#065f46" : "#1e40af",
+                          border: `1px solid ${isCompleted ? "#a7f3d0" : "#bfdbfe"}`,
+                        }}
+                      >
+                        {isCompleted ? "Hoàn thành" : "Đã xác nhận"}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "#64748b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      <Calendar size={15} />
+                      {new Date(b.scheduleStart).toLocaleString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
                     {hostUrl ? (
-                      <a href={hostUrl} target="_blank" rel="noopener noreferrer" className="admin-btn-primary" style={{ fontSize: '0.8125rem' }}>
-                        <LinkIcon size={14} /> Vào Zoom (Host)
+                      <a
+                        href={hostUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          background: "#3b82f6",
+                          color: "#ffffff",
+                          padding: "0.5rem 1rem",
+                          borderRadius: "8px",
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        <LinkIcon size={16} /> Vào Zoom (Host)
                       </a>
                     ) : (
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                        {isFinished ? 'Meeting đã kết thúc (ẩn URL Zoom).' : 'Chưa có host URL'}
+                      <span style={{ fontSize: "0.85rem", color: "#94a3b8", fontStyle: "italic", padding: "0.5rem 0" }}>
+                        {isFinished ? "Meeting đã kết thúc" : "Chưa có URL phòng họp"}
                       </span>
                     )}
                   </div>
                 </div>
-                <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                    Recording: <strong>{recordings.length}</strong>
+
+                {/* ---------------- RECORDINGS SECTION ---------------- */}
+                <div style={{ padding: "1.5rem" }}>
+                  <div
+                    style={{
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      color: "#64748b",
+                      marginBottom: "1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <Video size={16} /> Bản ghi hình & Transcript ({recordings.length})
                   </div>
-                  {recordings.slice(0, 3).map((r) => {
-                    const t = transcriptByRecording[r.id];
-                    return (
-                      <div key={r.id} style={{ border: '1px solid var(--glass-border)', borderRadius: 10, padding: '0.75rem', background: 'rgba(255,255,255,0.02)' }}>
-                        <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <Video size={14} /> {new Date(r.createdAt).toLocaleString('vi-VN')} ({r.contentType || 'unknown'})
-                        </div>
-                        {isVideoMp4(r.contentType) ? (
-                          <video
-                            controls
-                            preload="metadata"
-                            src={r.storageUrl}
-                            style={{ width: '100%', maxHeight: 360, borderRadius: 8, background: '#000' }}
-                          />
-                        ) : null}
-                        <div style={{ marginTop: '0.6rem', fontSize: '0.8125rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                            <FileText size={14} /> Transcript
-                          </div>
-                          {!t || t.loading ? (
-                            <div style={{ color: 'var(--text-muted)' }}>Đang tải transcript…</div>
-                          ) : !t.found ? (
-                            <div style={{ color: 'var(--text-muted)' }}>Chưa có transcript cho recording này.</div>
-                          ) : (
-                            <div style={{ color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                              {t.summary ? <p style={{ margin: '0 0 0.45rem', color: 'var(--text-secondary)' }}><strong>Tóm tắt:</strong> {t.summary}</p> : null}
-                              {t.text ? t.text : 'Transcript trống.'}
+
+                  {recordings.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "1rem",
+                        background: "#f8fafc",
+                        borderRadius: "8px",
+                        border: "1px dashed #cbd5e1",
+                        color: "#94a3b8",
+                        fontSize: "0.9rem",
+                        textAlign: "center",
+                      }}
+                    >
+                      Chưa có bản ghi hình nào được lưu lại.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                      {recordings.slice(0, 3).map((r) => {
+                        const t = transcriptByRecording[r.id];
+                        return (
+                          <div
+                            key={r.id}
+                            style={{
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "10px",
+                              overflow: "hidden",
+                              background: "#ffffff",
+                            }}
+                          >
+                            {/* Header của từng file record */}
+                            <div
+                              style={{
+                                padding: "0.75rem 1rem",
+                                borderBottom: "1px solid #e2e8f0",
+                                fontSize: "0.85rem",
+                                color: "#475569",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                                background: "#f8fafc",
+                                fontWeight: 500,
+                              }}
+                            >
+                              <Video size={15} color="#3b82f6" />
+                              Đã lưu lúc: {new Date(r.createdAt).toLocaleString("vi-VN")}
+                              <span
+                                style={{
+                                  marginLeft: "auto",
+                                  fontSize: "0.75rem",
+                                  color: "#94a3b8",
+                                  background: "#e2e8f0",
+                                  padding: "0.1rem 0.4rem",
+                                  borderRadius: "4px",
+                                }}
+                              >
+                                {r.contentType || "unknown"}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+
+                            {/* Nội dung Record & Transcript */}
+                            <div style={{ padding: "1.25rem" }}>
+                              {isVideoMp4(r.contentType) ? (
+                                <video
+                                  controls
+                                  preload="metadata"
+                                  src={r.storageUrl}
+                                  style={{
+                                    width: "100%",
+                                    maxHeight: 400,
+                                    borderRadius: "8px",
+                                    background: "#0f172a",
+                                    marginBottom: "1.25rem",
+                                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                                  }}
+                                />
+                              ) : null}
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.4rem",
+                                  color: "#334155",
+                                  fontSize: "0.9rem",
+                                  marginBottom: "0.75rem",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <FileText size={16} /> Nội dung cuộc họp (Transcript)
+                              </div>
+
+                              {!t || t.loading ? (
+                                <div
+                                  style={{
+                                    color: "#64748b",
+                                    fontSize: "0.9rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "1rem",
+                                    background: "#f8fafc",
+                                    borderRadius: "8px",
+                                  }}
+                                >
+                                  <Loader2 size={16} className="animate-spin" color="#3b82f6" /> Đang phân tích
+                                  transcript…
+                                </div>
+                              ) : !t.found ? (
+                                <div
+                                  style={{
+                                    color: "#94a3b8",
+                                    fontSize: "0.9rem",
+                                    fontStyle: "italic",
+                                    padding: "1rem",
+                                    background: "#f8fafc",
+                                    borderRadius: "8px",
+                                    border: "1px dashed #e2e8f0",
+                                  }}
+                                >
+                                  Hệ thống chưa tìm thấy transcript cho bản ghi này.
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: "0.9rem", lineHeight: 1.6 }}>
+                                  {/* Hộp tóm tắt */}
+                                  {t.summary ? (
+                                    <div
+                                      style={{
+                                        marginBottom: "1rem",
+                                        padding: "1rem",
+                                        borderRadius: "8px",
+                                        background: "#eff6ff",
+                                        borderLeft: "4px solid #3b82f6",
+                                      }}
+                                    >
+                                      <strong style={{ color: "#1e40af", display: "block", marginBottom: "0.25rem" }}>
+                                        Tóm tắt AI:
+                                      </strong>
+                                      <span style={{ color: "#334155" }}>{t.summary}</span>
+                                    </div>
+                                  ) : null}
+
+                                  {/* Hộp text chi tiết có thanh cuộn */}
+                                  <div
+                                    style={{
+                                      background: "#f8fafc",
+                                      padding: "1rem",
+                                      borderRadius: "8px",
+                                      border: "1px solid #e2e8f0",
+                                      maxHeight: "250px",
+                                      overflowY: "auto",
+                                      color: "#475569",
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    {t.text || "Transcript trống."}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             );
