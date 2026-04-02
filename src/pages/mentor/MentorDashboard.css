@@ -632,3 +632,70 @@
 .slot-tile-delete:disabled {
   display: none; /* Ẩn luôn nút xóa nếu đã đặt cho gọn */
 }
+
+/* Layout chia 2 cột cho trang Booking */
+.bookings-dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .bookings-dashboard-layout {
+    /* Cột trái chứa lịch (360px), cột phải chứa danh sách (phần còn lại) */
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .bookings-dashboard-layout {
+    grid-template-columns: 400px minmax(0, 1fr);
+  }
+}
+
+/* Card hiển thị Booking */
+.booking-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.booking-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.booking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.booking-card-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .booking-card-body {
+    grid-template-columns: 1fr 1fr; /* Chia 2 cột nhỏ bên trong card */
+  }
+}
+
+.booking-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f8fafc;
+}

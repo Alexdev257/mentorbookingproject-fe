@@ -46,7 +46,7 @@
   letter-spacing: -0.035em;
   line-height: 1.2;
   margin-bottom: 0.4rem;
-  background: linear-gradient(120deg, #f0f6fc 30%, #8b949e 95%);
+  background: linear-gradient(120deg, #087df1 30%, #8b949e 95%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -256,12 +256,7 @@
   width: 100%;
   max-width: 280px;
   border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--bg-tertiary) 0%,
-    rgba(88, 166, 255, 0.12) 50%,
-    var(--bg-tertiary) 100%
-  );
+  background: linear-gradient(90deg, var(--bg-tertiary) 0%, rgba(88, 166, 255, 0.12) 50%, var(--bg-tertiary) 100%);
   background-size: 200% 100%;
   animation: admin-shimmer 1.2s ease-in-out infinite;
 }
@@ -300,7 +295,9 @@
   border-radius: var(--radius-lg);
   border: 1px solid rgba(88, 166, 255, 0.18);
   background: linear-gradient(165deg, rgba(22, 27, 34, 0.98) 0%, rgba(10, 12, 16, 0.99) 100%);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .admin-modal-accent {
@@ -393,7 +390,9 @@
   border-radius: var(--radius-md);
   padding: 1rem 1.1rem;
   background: rgba(0, 0, 0, 0.2);
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .admin-file-zone:focus-within {
@@ -401,7 +400,7 @@
   background: rgba(88, 166, 255, 0.06);
 }
 
-.admin-file-zone input[type='file'] {
+.admin-file-zone input[type="file"] {
   width: 100%;
   font-size: 0.8125rem;
   color: var(--text-secondary);
