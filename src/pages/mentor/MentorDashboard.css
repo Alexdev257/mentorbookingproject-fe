@@ -250,3 +250,385 @@
   color: #64748b;
   font-size: 0.875rem;
 }
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+.animate-pulse-fast {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Card & Layout */
+.slot-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.slot-panel:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Slot Items */
+.slot-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slot-list-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateX(4px);
+}
+
+/* Status Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.badge-active {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.badge-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+/* Buttons */
+.btn-delete-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.btn-delete-slot:hover:not(:disabled) {
+  color: #ef4444;
+  background-color: #fee2e2;
+  transform: scale(1.1);
+}
+
+.btn-delete-slot:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-add-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-slot:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.btn-add-slot:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Inputs */
+.time-input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  font-family: inherit;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.slots-dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch; /* Đổi thành stretch để 2 cột kéo giãn bằng nhau */
+}
+
+/* Tablet / Desktop nhỏ */
+@media (min-width: 1024px) {
+  .slots-dashboard-layout {
+    /* Cột phải lúc này chứa nhiều đồ hơn nên có thể chia tỷ lệ cân bằng lại một chút */
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr);
+  }
+}
+
+/* Desktop lớn */
+@media (min-width: 1280px) {
+  .slots-dashboard-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(420px, 1fr);
+  }
+}
+
+.slots-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+  min-width: 0;
+}
+
+.slots-grid-container {
+  display: grid;
+  /* Tự động chia cột, mỗi ô tối thiểu 110px */
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.slot-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slot-tile:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.slot-tile-time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.35rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.slot-tile-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.slot-tile-status.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.slot-tile-status.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.slot-tile-delete {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  padding: 0.3rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0; /* Ẩn mặc định để đỡ rối */
+  transition: all 0.2s;
+  border-radius: 50%;
+}
+
+/* Chỉ hiện nút xóa khi hover VÀ slot chưa có người đặt */
+.slot-tile:hover .slot-tile-delete:not(:disabled) {
+  opacity: 1;
+}
+
+.slot-tile-delete:hover:not(:disabled) {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.slot-tile-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0 !important;
+}
+
+.btn-show-more {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-show-more:hover {
+  border-color: #94a3b8;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.slots-grid-container {
+  display: grid;
+  /* Thu nhỏ kích thước ô xuống 100px để hiển thị được nhiều cột hơn */
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem; /* Giảm khoảng cách giữa các ô */
+  align-content: start;
+}
+
+.slot-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 0.25rem; /* Ép mỏng padding trên dưới */
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem; /* Bo góc nhẹ hơn */
+  transition: all 0.2s ease;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slot-tile:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.slot-tile-time {
+  font-size: 0.75rem; /* Nhỏ gọn lại */
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.3rem;
+  text-align: center;
+  white-space: nowrap; /* Ép giờ nằm trên 1 dòng (VD: 08:00 - 09:00) */
+  letter-spacing: -0.01em;
+}
+
+.slot-tile-status {
+  font-size: 0.65rem; /* Badge nhỏ nhắn */
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.slot-tile-status.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.slot-tile-status.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.slot-tile-delete {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  padding: 0.2rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.slot-tile:hover .slot-tile-delete:not(:disabled) {
+  opacity: 1;
+}
+
+.slot-tile-delete:hover:not(:disabled) {
+  color: #ef4444;
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+.slot-tile-delete:disabled {
+  display: none; /* Ẩn luôn nút xóa nếu đã đặt cho gọn */
+}
