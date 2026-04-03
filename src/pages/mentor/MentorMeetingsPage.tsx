@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import type { BookingResponseDto, MeetingDetailDto, MeetingRecordingDto } from "../../types";
 import { BookingStatus } from "../../constants/bookingStatus";
 import { AdminPageHeader } from "../../components/admin/AdminPageHeader";
-import { Calendar, Link as LinkIcon, Loader2, Video, FileText, Inbox } from "lucide-react";
+import { Calendar, Link as LinkIcon, Loader2, Video, Inbox } from "lucide-react";
 
 type MeetingBundle = {
   meeting?: MeetingDetailDto;
@@ -383,7 +383,6 @@ const MentorMeetingsPage: React.FC = () => {
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                       {recordings.slice(0, 3).map((r) => {
-                        const t = transcriptByRecording[r.id];
                         return (
                           <div
                             key={r.id}
@@ -453,76 +452,7 @@ const MentorMeetingsPage: React.FC = () => {
                                   fontWeight: 700,
                                 }}
                               >
-                                <FileText size={16} /> Nội dung cuộc họp (Transcript)
                               </div>
-
-                              {!t || t.loading ? (
-                                <div
-                                  style={{
-                                    color: "#64748b",
-                                    fontSize: "0.9rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    padding: "1rem",
-                                    background: "#f8fafc",
-                                    borderRadius: "8px",
-                                  }}
-                                >
-                                  <Loader2 size={16} className="animate-spin" color="#3b82f6" /> Đang phân tích
-                                  transcript…
-                                </div>
-                              ) : !t.found ? (
-                                <div
-                                  style={{
-                                    color: "#94a3b8",
-                                    fontSize: "0.9rem",
-                                    fontStyle: "italic",
-                                    padding: "1rem",
-                                    background: "#f8fafc",
-                                    borderRadius: "8px",
-                                    border: "1px dashed #e2e8f0",
-                                  }}
-                                >
-                                  Hệ thống chưa tìm thấy transcript cho bản ghi này.
-                                </div>
-                              ) : (
-                                <div style={{ fontSize: "0.9rem", lineHeight: 1.6 }}>
-                                  {/* Hộp tóm tắt */}
-                                  {t.summary ? (
-                                    <div
-                                      style={{
-                                        marginBottom: "1rem",
-                                        padding: "1rem",
-                                        borderRadius: "8px",
-                                        background: "#eff6ff",
-                                        borderLeft: "4px solid #3b82f6",
-                                      }}
-                                    >
-                                      <strong style={{ color: "#1e40af", display: "block", marginBottom: "0.25rem" }}>
-                                        Tóm tắt AI:
-                                      </strong>
-                                      <span style={{ color: "#334155" }}>{t.summary}</span>
-                                    </div>
-                                  ) : null}
-
-                                  {/* Hộp text chi tiết có thanh cuộn */}
-                                  <div
-                                    style={{
-                                      background: "#f8fafc",
-                                      padding: "1rem",
-                                      borderRadius: "8px",
-                                      border: "1px solid #e2e8f0",
-                                      maxHeight: "250px",
-                                      overflowY: "auto",
-                                      color: "#475569",
-                                      whiteSpace: "pre-wrap",
-                                    }}
-                                  >
-                                    {t.text || "Transcript trống."}
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           </div>
                         );
