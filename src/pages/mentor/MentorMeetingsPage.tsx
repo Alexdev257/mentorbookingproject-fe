@@ -432,7 +432,7 @@ const MentorMeetingsPage: React.FC = () => {
                                   src={r.storageUrl}
                                   style={{
                                     width: "100%",
-                                    maxHeight: 400,
+                                    maxHeight:600,
                                     borderRadius: "8px",
                                     background: "#0f172a",
                                     marginBottom: "1.25rem",
