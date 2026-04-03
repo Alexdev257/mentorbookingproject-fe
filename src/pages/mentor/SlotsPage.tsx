@@ -8,6 +8,7 @@ import { AdminConfirmDialog } from "../../components/admin/AdminConfirmDialog";
 import { MonthCalendar } from "../../components/calendar/MonthCalendar";
 import type { MonthCalMarker } from "../../components/calendar/MonthCalendar";
 import { isSameLocalDay, startOfMonth, toLocalYmd } from "../../components/calendar/monthUtils";
+import { vietnamWallToUtcIso } from "../../utils/vietnamTime";
 import "./MentorDashboard.css"; // Nhớ import file CSS
 
 const SlotsPage: React.FC = () => {
@@ -83,8 +84,8 @@ const SlotsPage: React.FC = () => {
     setFormSuccess(null);
     setIsAdding(true);
     try {
-      const startAt = `${selectedYmd}T${newSlot.startTime}:00Z`;
-      const endAt = `${selectedYmd}T${newSlot.endTime}:00Z`;
+      const startAt = vietnamWallToUtcIso(selectedYmd, newSlot.startTime);
+      const endAt = vietnamWallToUtcIso(selectedYmd, newSlot.endTime);
       const response = await bookingApi.createSlot(user.id, { startAt, endAt });
       if (response.isSuccess) {
         await fetchSlots();
@@ -128,7 +129,7 @@ const SlotsPage: React.FC = () => {
       <AdminPageHeader
         eyebrow="Mentor"
         title="Lịch trống"
-        description="Bấm vào một ngày trên lịch để chọn ngày, rồi nhập giờ bắt đầu / kết thúc và thêm slot. Slot đã có người đặt không thể xóa."
+        description="Chọn ngày trên lịch, nhập giờ theo Việt Nam (GMT+7); hệ thống gửi lên máy chủ dạng UTC. Slot đã có người đặt không thể xóa."
       />
 
       <AdminConfirmDialog
@@ -377,7 +378,7 @@ const SlotsPage: React.FC = () => {
                     }}
                     htmlFor="slot-start"
                   >
-                    Giờ bắt đầu
+                    Giờ bắt đầu (GMT+7)
                   </label>
                   <input
                     id="slot-start"
@@ -399,7 +400,7 @@ const SlotsPage: React.FC = () => {
                     }}
                     htmlFor="slot-end"
                   >
-                    Giờ kết thúc
+                    Giờ kết thúc (GMT+7)
                   </label>
                   <input
                     id="slot-end"
