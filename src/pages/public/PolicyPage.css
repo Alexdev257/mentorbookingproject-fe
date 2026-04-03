@@ -1,0 +1,440 @@
+.policy-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 1.5rem;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  box-sizing: border-box;
+}
+
+.policy-shell {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 1.25rem;
+  padding: 2rem 2rem 1.75rem;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.policy-header {
+  margin-bottom: 1.5rem;
+}
+
+.policy-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  transition: color 0.2s;
+}
+
+.policy-back:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.policy-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.policy-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.policy-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.policy-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.policy-tab:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.policy-tab--active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.policy-tab__icon {
+  display: flex;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.policy-tab__label--short {
+  display: none;
+}
+
+.policy-panel {
+  max-height: min(60vh, 28rem);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  margin-right: -0.25rem;
+}
+
+.policy-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.policy-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.policy-content h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.35rem 0;
+}
+
+.policy-updated {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  margin: 0 0 1rem 0;
+}
+
+.policy-content h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 1.25rem 0 0.5rem 0;
+}
+
+.policy-content p {
+  font-size: 0.9375rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 0.75rem 0;
+}
+
+.policy-content ul {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.25rem;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.policy-content code {
+  font-size: 0.85em;
+  background: #f1f5f9;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+
+.policy-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.policy-footer p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+@keyframes policyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.policy-page .animate-fade-in {
+  animation: policyFadeIn 0.45s ease-out forwards;
+}
+
+@media (max-width: 640px) {
+  .policy-shell {
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+
+  .policy-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    scrollbar-width: thin;
+  }
+
+  .policy-tab {
+    flex-shrink: 0;
+  }
+
+  .policy-tab__label--full {
+    display: none;
+  }
+
+  .policy-tab__label--short {
+    display: inline;
+  }
+
+  .policy-panel {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* --- MentorBooking policies: layout v2 (mb-policies-*) — added alongside legacy .policy-* rules above --- */
+
+.mb-policies-surface {
+  position: relative;
+  overflow-x: hidden;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(14, 165, 233, 0.1), transparent 50%),
+    linear-gradient(160deg, #eef2f7 0%, #e8edf4 45%, #f1f5f9 100%);
+}
+
+.mb-policies-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.35;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 85%);
+}
+
+.mb-policies-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 920px;
+  padding: 2.25rem 2.25rem 1.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 20px 50px -24px rgba(15, 23, 42, 0.18),
+    0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.mb-policies-hero {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.mb-policies-hero-text h1 {
+  font-size: 1.65rem;
+  letter-spacing: -0.03em;
+}
+
+.mb-policies-eyebrow {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.mb-policies-lead {
+  max-width: 52ch;
+}
+
+.mb-policies-back {
+  width: fit-content;
+  padding: 0.35rem 0.6rem 0.35rem 0;
+  margin-bottom: 0;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.mb-policies-back:hover {
+  background: rgba(37, 99, 235, 0.06);
+  text-decoration: none;
+}
+
+.mb-policies-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mb-policies-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.45rem;
+  padding: 1rem 0.85rem;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.mb-policies-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.15);
+}
+
+.mb-policies-card--active {
+  border-color: #3b82f6;
+  background: linear-gradient(145deg, #eff6ff 0%, #ffffff 55%);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.25),
+    0 12px 28px -14px rgba(37, 99, 235, 0.35);
+  color: #0f172a;
+}
+
+.mb-policies-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+.mb-policies-card--active .mb-policies-card__icon {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1e40af;
+}
+
+.mb-policies-card__title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.mb-policies-card__blurb {
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.mb-policies-card--active .mb-policies-card__blurb {
+  color: #475569;
+}
+
+.mb-policies-panel {
+  max-height: none;
+  overflow: visible;
+  padding: 1.35rem 1.35rem 1.5rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.mb-policies-content h2 {
+  font-size: 1.2rem;
+}
+
+.mb-policies-content ul li + li {
+  margin-top: 0.45rem;
+}
+
+.mb-policies-content strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.mb-policies-footer {
+  margin-top: 1.75rem;
+  padding-top: 1.15rem;
+}
+
+.mb-policies-footer p {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+  .mb-policies-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .mb-policies-shell {
+    padding: 1.5rem 1.2rem 1.35rem;
+  }
+
+  .mb-policies-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .mb-policies-card {
+    padding: 0.85rem 0.7rem;
+  }
+
+  .mb-policies-card__blurb {
+    display: none;
+  }
+
+  .mb-policies-panel {
+    padding: 1.1rem 1rem 1.25rem;
+  }
+}
