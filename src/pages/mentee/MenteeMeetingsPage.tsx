@@ -320,16 +320,34 @@ const MindmapDiagram: React.FC<{ data: MindmapNode }> = ({ data }) => {
   const branches = data.branches ?? [];
   
   const chunkBranches = (items: { topic?: string; subtopics?: string[] }[]) => {
-      if (items.length === 0) return [];
-      if (items.length <= 3) return [items];
-      if (items.length === 4) return [items.slice(0, 2), items.slice(2, 4)];
-      if (items.length === 5) return [items.slice(0, 2), items.slice(2, 5)];
-      if (items.length === 6) return [items.slice(0, 3), items.slice(3, 6)];
+      const n = items.length;
+      if (n === 0) return [];
+      if (n === 1) return [items];
       
-      const chunks = [];
-      for (let i = 0; i < items.length; i += 3) {
-          chunks.push(items.slice(i, i + 3));
+      let threes = Math.floor(n / 3);
+      let remainder = n % 3;
+      
+      // Avoid a dangling single-item row by converting one generic '3' chunk into two '2' chunks
+      if (remainder === 1 && threes > 0) {
+          threes -= 1;
+          remainder += 3;
       }
+      
+      const twos = remainder / 2;
+      const chunks = [];
+      let currentIndex = 0;
+      
+      // Place chunks of 2 first (e.g. 5 items -> top row 2, bottom row 3)
+      for (let i = 0; i < twos; i++) {
+          chunks.push(items.slice(currentIndex, currentIndex + 2));
+          currentIndex += 2;
+      }
+      
+      for (let i = 0; i < threes; i++) {
+          chunks.push(items.slice(currentIndex, currentIndex + 3));
+          currentIndex += 3;
+      }
+      
       return chunks;
   };
 
