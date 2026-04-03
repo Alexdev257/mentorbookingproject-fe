@@ -1260,17 +1260,24 @@ const MenteeMeetingsPage: React.FC = () => {
                                 type="button"
                                 className="mtw-primary-btn"
                                 style={{ fontSize: '0.75rem', padding: '0.45rem 0.75rem', minHeight: 'unset' }}
-                                onClick={() =>
-                                  matchedRef?.transcriptId
-                                    ? void loadTranscriptById(transcriptStateKey, matchedRef.transcriptId)
-                                    : undefined
-                                }
+                                onClick={() => {
+                                  if (!matchedRef?.transcriptId) return;
+                                  if (transcriptByBooking?.loaded) {
+                                    setBookingTranscriptById((prev) => {
+                                      const next = { ...prev };
+                                      delete next[transcriptStateKey];
+                                      return next;
+                                    });
+                                  } else {
+                                    void loadTranscriptById(transcriptStateKey, matchedRef.transcriptId);
+                                  }
+                                }}
                                 disabled={transcriptByBooking?.loading || !matchedRef?.transcriptId}
                               >
                                 {transcriptByBooking?.loading
                                   ? 'Đang tải transcript...'
                                   : matchedRef?.transcriptId
-                                    ? 'Xem transcript + summary'
+                                    ? (transcriptByBooking?.loaded ? 'Đóng transcript + summary' : 'Xem transcript + summary')
                                     : 'Không có transcriptId trong notes'}
                               </button>
                             </div>
