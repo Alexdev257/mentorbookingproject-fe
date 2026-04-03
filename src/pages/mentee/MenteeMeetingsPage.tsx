@@ -306,114 +306,225 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
 };
 
 const BRANCH_THEMES = [
-  { accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', icon: '📋' },
-  { accent: '#0ea5e9', bg: '#f0f9ff', border: '#bae6fd', icon: '🎯' },
-  { accent: '#10b981', bg: '#ecfdf5', border: '#a7f3d0', icon: '✅' },
-  { accent: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '💡' },
-  { accent: '#ef4444', bg: '#fef2f2', border: '#fecaca', icon: '🔴' },
-  { accent: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', icon: '🧠' },
-  { accent: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8', icon: '📌' },
-  { accent: '#14b8a6', bg: '#f0fdfa', border: '#99f6e4', icon: '🔗' },
+  { accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', text: '#312e81', icon: '✦' },
+  { accent: '#0ea5e9', bg: '#f0f9ff', border: '#bae6fd', text: '#082f49', icon: '●' },
+  { accent: '#10b981', bg: '#ecfdf5', border: '#a7f3d0', text: '#064e3b', icon: '■' },
+  { accent: '#f59e0b', bg: '#fffbeb', border: '#fde68a', text: '#78350f', icon: '★' },
+  { accent: '#ef4444', bg: '#fef2f2', border: '#fecaca', text: '#7f1d1d', icon: '✦' },
+  { accent: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', text: '#4c1d95', icon: '●' },
+  { accent: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8', text: '#831843', icon: '■' },
+  { accent: '#14b8a6', bg: '#f0fdfa', border: '#99f6e4', text: '#134e4a', icon: '★' },
 ];
 
 const MindmapDiagram: React.FC<{ data: MindmapNode }> = ({ data }) => {
   const branches = data.branches ?? [];
+  
+  const chunkBranches = (items: { topic?: string; subtopics?: string[] }[]) => {
+      if (items.length === 0) return [];
+      if (items.length <= 3) return [items];
+      if (items.length === 4) return [items.slice(0, 2), items.slice(2, 4)];
+      if (items.length === 5) return [items.slice(0, 2), items.slice(2, 5)];
+      if (items.length === 6) return [items.slice(0, 3), items.slice(3, 6)];
+      
+      const chunks = [];
+      for (let i = 0; i < items.length; i += 3) {
+          chunks.push(items.slice(i, i + 3));
+      }
+      return chunks;
+  };
+
+  const rows = chunkBranches(branches);
+  let globalBranchIndex = 0;
+
+  const ROW_GAP = '1.5rem';
+  const BUS_DROP = '2.5rem';
 
   return (
-    <div
-      style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: 20,
-        padding: '1.25rem',
-        background: '#ffffff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-      }}
-    >
+    <div style={{
+      padding: '3rem 1.5rem',
+      background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
+      borderRadius: '24px',
+      border: '1px solid #e2e8f0',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,1), 0 4px 20px rgba(0,0,0,0.03)',
+      overflowX: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}>
       {/* Central Topic */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '0.75rem 1.5rem',
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: '#ffffff',
-            fontWeight: 700,
-            fontSize: '1rem',
-            boxShadow: '0 4px 14px rgba(99,102,241,0.25)',
-            maxWidth: 500,
-            lineHeight: 1.4,
-          }}
-        >
-          {data.centralTopic || 'Central topic'}
-        </div>
+      <div style={{
+         background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+         padding: '1.25rem 2.5rem',
+         borderRadius: '24px',
+         color: '#ffffff',
+         fontWeight: 800,
+         fontSize: '1.1rem',
+         boxShadow: '0 12px 24px -6px rgba(79, 70, 229, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+         maxWidth: '400px',
+         textAlign: 'center',
+         position: 'relative',
+         zIndex: 5,
+         lineHeight: 1.4
+      }}>
+         {data.centralTopic || 'Ghi chép cốt lõi'}
       </div>
 
-      {/* Connector line */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
-        <div style={{ width: 2, height: 20, background: 'linear-gradient(180deg, #8b5cf6, #e2e8f0)', borderRadius: 2 }} />
-      </div>
+      <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+         
+         {rows.map((rowItems, rIndex) => {
+             const isFirstRow = rIndex === 0;
+             const isLastRow = rIndex === rows.length - 1;
 
-      {/* Branches Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: branches.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '0.75rem' }}>
-        {branches.map((br, i) => {
-          const theme = BRANCH_THEMES[i % BRANCH_THEMES.length];
-          return (
-            <div
-              key={`branch-${i}`}
-              style={{
-                border: `1px solid ${theme.border}`,
-                borderRadius: 14,
-                background: theme.bg,
-                padding: '0.85rem 1rem',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 12px ${theme.accent}20`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = 'none';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-              }}
-            >
-              {/* Branch header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '1rem' }}>{theme.icon}</span>
-                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: theme.accent }}>
-                  {br.topic || `Nhánh ${i + 1}`}
-                </span>
-              </div>
-              {/* Subtopics */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingLeft: '0.25rem' }}>
-                {(br.subtopics ?? []).map((s, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '0.4rem',
-                      fontSize: '0.8rem',
-                      color: '#475569',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <span style={{ 
-                      marginTop: '0.35rem',
-                      width: 5, 
-                      minWidth: 5, 
-                      height: 5, 
-                      borderRadius: '50%', 
-                      background: theme.accent, 
-                      opacity: 0.6,
-                    }} />
-                    <span>{s}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+             return (
+                 <div key={rIndex} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center',
+                      width: '100%',
+                      position: 'relative',
+                      paddingTop: BUS_DROP,
+                      marginTop: isFirstRow ? 0 : ROW_GAP
+                 }}>
+                     {/* Upper Trunk segment coming from above */}
+                     <div style={{
+                         position: 'absolute',
+                         top: isFirstRow ? 0 : `-${ROW_GAP}`,
+                         height: isFirstRow ? BUS_DROP : `calc(${ROW_GAP} + ${BUS_DROP})`,
+                         left: '50%',
+                         transform: 'translateX(-50%)',
+                         width: '3px',
+                         background: '#a5b4fc',
+                         zIndex: 1
+                     }} />
+
+                     {/* Lower Trunk passing through this row to next row */}
+                     {!isLastRow && (
+                         <div style={{
+                             position: 'absolute',
+                             top: BUS_DROP,
+                             bottom: 0,
+                             left: '50%',
+                             transform: 'translateX(-50%)',
+                             width: '3px',
+                             background: '#a5b4fc',
+                             zIndex: 1
+                         }} />
+                     )}
+
+                     {/* The Horizontal Bus for this row */}
+                     {rowItems.length > 1 && (
+                        <div style={{
+                            position: 'absolute',
+                            top: BUS_DROP,
+                            left: `calc(50% / ${rowItems.length})`,
+                            right: `calc(50% / ${rowItems.length})`,
+                            height: '3px',
+                            background: '#a5b4fc',
+                            zIndex: 1
+                        }} />
+                     )}
+
+                     {/* Render Cards in this row */}
+                     {rowItems.map((item, cIndex) => {
+                         const themeIndex = globalBranchIndex++;
+                         const theme = BRANCH_THEMES[themeIndex % BRANCH_THEMES.length];
+
+                         return (
+                             <div key={cIndex} style={{ 
+                                  flex: 1, 
+                                  display: 'flex', 
+                                  flexDirection: 'column', 
+                                  alignItems: 'center', 
+                                  position: 'relative',
+                                  padding: '0 0.75rem',
+                                  zIndex: 2 // above trunk
+                             }}>
+                                 {/* Dot at the junction */}
+                                 <div style={{
+                                     position: 'relative',
+                                     width: '14px',
+                                     height: '14px',
+                                     background: theme.accent,
+                                     borderRadius: '50%',
+                                     boxShadow: `0 0 0 4px #ffffff, 0 0 12px ${theme.accent}`,
+                                     marginTop: '-7px', // center exactly over the 3px bus line
+                                     marginBottom: '1.25rem',
+                                     zIndex: 3
+                                 }} />
+
+                                 {/* Node Card */}
+                                 <div style={{
+                                    background: '#ffffff',
+                                    border: `1px solid ${theme.border}`,
+                                    borderTop: `5px solid ${theme.accent}`, // Top accent for top-down layout
+                                    borderRadius: '16px',
+                                    padding: '1.25rem',
+                                    width: '100%',
+                                    maxWidth: '400px',
+                                    boxShadow: '0 4px 15px -3px rgba(0,0,0,0.04), 0 2px 6px -2px rgba(0,0,0,0.02)',
+                                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s'
+                                 }}
+                                 onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)';
+                                    e.currentTarget.style.boxShadow = `0 12px 30px -5px ${theme.accent}30, 0 4px 12px -5px ${theme.accent}20`;
+                                 }}
+                                 onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'none';
+                                    e.currentTarget.style.boxShadow = '0 4px 15px -3px rgba(0,0,0,0.04), 0 2px 6px -2px rgba(0,0,0,0.02)';
+                                 }}
+                                 >
+                                    <div style={{
+                                       fontWeight: 800,
+                                       color: theme.text,
+                                       fontSize: '0.95rem',
+                                       marginBottom: '0.8rem',
+                                       display: 'flex',
+                                       alignItems: 'center',
+                                       justifyContent: 'center',
+                                       gap: '0.5rem',
+                                       textAlign: 'center'
+                                    }}>
+                                       <span style={{ color: theme.accent, fontSize: '1.1rem', opacity: 0.9 }}>{theme.icon}</span>
+                                       {item.topic || `Nhánh ${themeIndex + 1}`}
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                       {(item.subtopics ?? []).map((s: string, idx: number) => (
+                                          <div key={idx} style={{
+                                             display: 'flex',
+                                             alignItems: 'flex-start',
+                                             gap: '0.6rem',
+                                             fontSize: '0.86rem',
+                                             color: '#475569',
+                                             lineHeight: 1.5,
+                                             background: theme.bg,
+                                             padding: '0.6rem 0.8rem',
+                                             borderRadius: '10px',
+                                             border: `1px solid ${theme.bg}`,
+                                             transition: 'background 0.2s',
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = '#ffffff'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = theme.bg}
+                                          >
+                                             <div style={{
+                                                marginTop: '0.4rem',
+                                                width: '6px',
+                                                minWidth: '6px',
+                                                height: '6px',
+                                                borderRadius: '50%',
+                                                background: theme.accent,
+                                                opacity: 0.7
+                                             }} />
+                                             <span style={{ flex: 1, letterSpacing: '0.01em' }}>{s}</span>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                             </div>
+                         )
+                     })}
+                 </div>
+             )
+         })}
       </div>
     </div>
   );
