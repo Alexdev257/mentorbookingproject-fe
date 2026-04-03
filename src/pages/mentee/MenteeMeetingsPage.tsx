@@ -1247,7 +1247,7 @@ const MenteeMeetingsPage: React.FC = () => {
                                   controls
                                   preload="metadata"
                                   src={r.storageUrl}
-                                  style={{ width: '100%', maxHeight: 520, display: 'block', borderRadius: 14, background: '#000' }}
+                                  style={{ width: '100%', maxHeight: 840, display: 'block', borderRadius: 14, background: '#000' }}
                                 />
                               </div>
                             ) : null}
