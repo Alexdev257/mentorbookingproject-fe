@@ -59,6 +59,10 @@ const MentorMeetingsPage: React.FC = () => {
   const [meetingByBooking, setMeetingByBooking] = useState<Record<string, MeetingBundle>>({});
   const [transcriptByRecording, setTranscriptByRecording] = useState<Record<string, TranscriptViewState>>({});
 
+  const [pageIndex, setPageIndex] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 10;
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -66,11 +70,15 @@ const MentorMeetingsPage: React.FC = () => {
     }
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
-        const bookingRes = await bookingApi.getMentorBookings(user.id, 1, 80);
+        const bookingRes = await bookingApi.getMentorBookings(user.id, pageIndex, PAGE_SIZE);
         const rows = bookingRes.isSuccess ? (bookingRes.data?.items ?? []) : [];
         if (cancelled) return;
         setBookings(rows);
+        if (bookingRes.isSuccess && bookingRes.data?.totalPages) {
+            setTotalPages(bookingRes.data.totalPages);
+        }
 
         const targetIds = rows
           .filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed)
@@ -104,7 +112,7 @@ const MentorMeetingsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, pageIndex]);
 
   const rows = useMemo(
     () => bookings.filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed),
@@ -463,6 +471,76 @@ const MentorMeetingsPage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '3rem', marginBottom: '2rem', gap: '1.5rem', alignItems: 'center' }}>
+           <button
+               onClick={() => {
+                   setPageIndex((p) => Math.max(1, p - 1));
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
+               disabled={pageIndex === 1}
+               style={{ padding: '0.6rem 1.2rem', background: pageIndex === 1 ? '#cbd5e1' : '#f1f5f9', color: pageIndex === 1 ? '#64748b' : '#334155', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: pageIndex === 1 ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+           >
+               Trang trước
+           </button>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600, color: '#475569' }}>
+               Trang
+               <input
+                   type="number"
+                   min={1}
+                   max={totalPages}
+                   defaultValue={pageIndex}
+                   key={pageIndex}
+                   title="Nhập số trang và nhấn Enter"
+                   onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                           const val = parseInt(e.currentTarget.value, 10);
+                           if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                               setPageIndex(val);
+                               window.scrollTo({ top: 0, behavior: 'smooth' });
+                           } else {
+                               e.currentTarget.value = pageIndex.toString();
+                           }
+                       }
+                   }}
+                   onBlur={(e) => {
+                       const val = parseInt(e.currentTarget.value, 10);
+                       if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                           setPageIndex(val);
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                       } else {
+                           e.currentTarget.value = pageIndex.toString();
+                       }
+                   }}
+                   style={{ 
+                       width: '50px', 
+                       padding: '0.2rem 0', 
+                       textAlign: 'center', 
+                       borderRadius: '6px', 
+                       border: '1px solid #cbd5e1',
+                       fontSize: '1rem',
+                       fontWeight: 600,
+                       color: '#1e293b',
+                       outline: 'none',
+                       background: '#fff'
+                   }}
+               />
+               / {totalPages}
+           </div>
+           <button
+               onClick={() => {
+                   setPageIndex((p) => Math.min(totalPages, p + 1));
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
+               disabled={pageIndex === totalPages}
+               style={{ padding: '0.6rem 1.2rem', background: pageIndex === totalPages ? '#cbd5e1' : '#f1f5f9', color: pageIndex === totalPages ? '#64748b' : '#334155', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: pageIndex === totalPages ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+           >
+               Trang sau
+           </button>
         </div>
       )}
     </div>
