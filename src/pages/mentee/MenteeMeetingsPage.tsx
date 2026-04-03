@@ -1009,6 +1009,10 @@ const MenteeMeetingsPage: React.FC = () => {
   const [bookingTranscriptById, setBookingTranscriptById] = useState<Record<string, BookingTranscriptDetail>>({});
   const [transcriptDetailTabByKey, setTranscriptDetailTabByKey] = useState<Record<string, 'segments' | 'summary'>>({});
 
+  const [pageIndex, setPageIndex] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 10;
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -1016,11 +1020,15 @@ const MenteeMeetingsPage: React.FC = () => {
     }
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
-        const bookingRes = await bookingApi.getMenteeBookings(user.id, 1, 80);
+        const bookingRes = await bookingApi.getMenteeBookings(user.id, pageIndex, PAGE_SIZE);
         const rows = bookingRes.isSuccess ? bookingRes.data?.items ?? [] : [];
         if (cancelled) return;
         setBookings(rows);
+        if (bookingRes.isSuccess && bookingRes.data?.totalPages) {
+            setTotalPages(bookingRes.data.totalPages);
+        }
 
         const targetIds = rows
           .filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed)
@@ -1054,7 +1062,7 @@ const MenteeMeetingsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, pageIndex]);
 
   const rows = useMemo(
     () => bookings.filter((b) => b.status === BookingStatus.Confirmed || b.status === BookingStatus.Completed),
@@ -1472,6 +1480,78 @@ const MenteeMeetingsPage: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '3rem', marginBottom: '2rem', gap: '1.5rem', alignItems: 'center' }}>
+               <button
+                   onClick={() => {
+                       setPageIndex((p) => Math.max(1, p - 1));
+                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                   }}
+                   disabled={pageIndex === 1}
+                   className="mtw-primary-btn"
+                   style={{ padding: '0.6rem 1.2rem', background: pageIndex === 1 ? '#cbd5e1' : undefined }}
+               >
+                   Trang trước
+               </button>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600, color: '#475569' }}>
+                   Trang
+                   <input
+                       type="number"
+                       min={1}
+                       max={totalPages}
+                       defaultValue={pageIndex}
+                       key={pageIndex}
+                       title="Nhập số trang và nhấn Enter"
+                       onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                               const val = parseInt(e.currentTarget.value, 10);
+                               if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                                   setPageIndex(val);
+                                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                               } else {
+                                   e.currentTarget.value = pageIndex.toString();
+                               }
+                           }
+                       }}
+                       onBlur={(e) => {
+                           const val = parseInt(e.currentTarget.value, 10);
+                           if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                               setPageIndex(val);
+                               window.scrollTo({ top: 0, behavior: 'smooth' });
+                           } else {
+                               e.currentTarget.value = pageIndex.toString();
+                           }
+                       }}
+                       style={{ 
+                           width: '50px', 
+                           padding: '0.2rem 0', 
+                           textAlign: 'center', 
+                           borderRadius: '6px', 
+                           border: '1px solid #cbd5e1',
+                           fontSize: '1rem',
+                           fontWeight: 600,
+                           color: '#1e293b',
+                           outline: 'none'
+                       }}
+                   />
+                   / {totalPages}
+               </div>
+               <button
+                   onClick={() => {
+                       setPageIndex((p) => Math.min(totalPages, p + 1));
+                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                   }}
+                   disabled={pageIndex === totalPages}
+                   className="mtw-primary-btn"
+                   style={{ padding: '0.6rem 1.2rem', background: pageIndex === totalPages ? '#cbd5e1' : undefined }}
+               >
+                   Trang sau
+               </button>
+            </div>
+          )}
+
         </div>
       </div>
     </>
