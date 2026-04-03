@@ -174,6 +174,17 @@ function buildKeyPointsMindmap(keyPoints?: string[]): MindmapNode | null {
   };
 }
 
+const SEGMENT_COLORS = [
+  { bar: 'linear-gradient(90deg, #6366f1, #818cf8)', border: '#6366f1', bg: 'rgba(99,102,241,0.06)' },
+  { bar: 'linear-gradient(90deg, #0ea5e9, #38bdf8)', border: '#0ea5e9', bg: 'rgba(14,165,233,0.06)' },
+  { bar: 'linear-gradient(90deg, #10b981, #34d399)', border: '#10b981', bg: 'rgba(16,185,129,0.06)' },
+  { bar: 'linear-gradient(90deg, #f59e0b, #fbbf24)', border: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+  { bar: 'linear-gradient(90deg, #ef4444, #f87171)', border: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
+  { bar: 'linear-gradient(90deg, #8b5cf6, #a78bfa)', border: '#8b5cf6', bg: 'rgba(139,92,246,0.06)' },
+  { bar: 'linear-gradient(90deg, #ec4899, #f472b6)', border: '#ec4899', bg: 'rgba(236,72,153,0.06)' },
+  { bar: 'linear-gradient(90deg, #14b8a6, #2dd4bf)', border: '#14b8a6', bg: 'rgba(20,184,166,0.06)' },
+];
+
 const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) => {
   const normalized = segments
     .map((s) => ({
@@ -188,34 +199,40 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
   return (
     <div
       style={{
-        border: '1px solid rgba(123,97,255,0.18)',
+        border: '1px solid #e2e8f0',
         borderRadius: 16,
-        padding: '0.8rem',
-        background: 'linear-gradient(180deg, rgba(123,97,255,0.05), rgba(123,97,255,0.01))',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
+        padding: '1rem',
+        background: '#ffffff',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: '0.45rem', color: '#111111' }}>Segments Timeline</div>
-      <div style={{ display: 'grid', gap: '0.42rem' }}>
+      <div style={{ fontWeight: 700, marginBottom: '0.6rem', color: '#1e293b', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ display: 'inline-flex', width: 20, height: 20, borderRadius: 6, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </span>
+        Segments Timeline
+      </div>
+      <div style={{ display: 'grid', gap: '0.5rem' }}>
         {normalized.map((s, i) => {
           const left = (s.start / total) * 100;
           const width = Math.max(((s.end - s.start) / total) * 100, 2.5);
-          const hue = (i * 37) % 360;
+          const color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
           const words = s.text.split(/\s+/).filter(Boolean);
           const keyWords = words.filter((w) => w.length >= 5).slice(0, 3).map((w) => w.toLowerCase());
           const parts = s.text.split(/(\s+)/);
           return (
             <div key={i}>
-              <div style={{ fontSize: '0.74rem', color: '#7b7f8f', marginBottom: '0.18rem', display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span>[{s.start.toFixed(1)}s - {s.end.toFixed(1)}s]</span>
+              <div style={{ fontSize: '0.76rem', color: '#64748b', marginBottom: '0.2rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600, color: '#475569' }}>[{s.start.toFixed(1)}s - {s.end.toFixed(1)}s]</span>
                 <span
                   style={{
                     borderRadius: 999,
-                    border: '1px solid #ececf3',
-                    padding: '0.08rem 0.45rem',
-                    fontSize: '0.68rem',
-                    color: '#8a8fa3',
-                    background: '#fff',
+                    border: '1px solid #e2e8f0',
+                    padding: '0.1rem 0.5rem',
+                    fontSize: '0.7rem',
+                    color: '#64748b',
+                    background: '#f8fafc',
+                    fontWeight: 500,
                   }}
                 >
                   {Math.max(0, s.end - s.start).toFixed(1)}s
@@ -224,9 +241,9 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
               <div
                 style={{
                   position: 'relative',
-                  height: 10,
+                  height: 8,
                   borderRadius: 999,
-                  background: '#eef0f7',
+                  background: '#f1f5f9',
                   overflow: 'hidden',
                 }}
               >
@@ -238,22 +255,22 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
                     top: 0,
                     bottom: 0,
                     borderRadius: 999,
-                    background: `linear-gradient(90deg, hsla(${hue}, 80%, 60%, 0.95), hsla(${(hue + 35) % 360}, 85%, 56%, 0.95))`,
-                    boxShadow: '0 0 10px rgba(123,97,255,0.22)',
+                    background: color.bar,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
                   }}
                 />
               </div>
               <div
                 style={{
-                  marginTop: '0.32rem',
-                  fontSize: '0.82rem',
-                  lineHeight: 1.5,
-                  color: '#17181c',
-                  background: '#ffffff',
-                  border: '1px solid #ececf3',
-                  borderLeft: `3px solid hsla(${hue}, 85%, 60%, 0.95)`,
-                  borderRadius: 12,
-                  padding: '0.42rem 0.56rem',
+                  marginTop: '0.3rem',
+                  fontSize: '0.84rem',
+                  lineHeight: 1.6,
+                  color: '#334155',
+                  background: color.bg,
+                  border: '1px solid #e2e8f0',
+                  borderLeft: `3px solid ${color.border}`,
+                  borderRadius: 10,
+                  padding: '0.5rem 0.65rem',
                 }}
               >
                 {parts.map((p, idx) => {
@@ -263,10 +280,11 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
                     <mark
                       key={idx}
                       style={{
-                        background: 'rgba(255,224,102,0.28)',
-                        color: '#7a5d00',
-                        padding: '0 0.12rem',
-                        borderRadius: 3,
+                        background: 'rgba(99,102,241,0.12)',
+                        color: '#4338ca',
+                        padding: '0.05rem 0.18rem',
+                        borderRadius: 4,
+                        fontWeight: 600,
                       }}
                     >
                       {p}
@@ -280,144 +298,122 @@ const SegmentTimeline: React.FC<{ segments: SegmentNode[] }> = ({ segments }) =>
           );
         })}
       </div>
-      <div style={{ marginTop: '0.45rem', fontSize: '0.72rem', color: '#8a8fa3' }}>
-        Tổng thời lượng: {total.toFixed(1)}s
+      <div style={{ marginTop: '0.55rem', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 500 }}>
+        Tổng thời lượng: {total.toFixed(1)}s · {normalized.length} đoạn
       </div>
     </div>
   );
 };
 
+const BRANCH_THEMES = [
+  { accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', icon: '📋' },
+  { accent: '#0ea5e9', bg: '#f0f9ff', border: '#bae6fd', icon: '🎯' },
+  { accent: '#10b981', bg: '#ecfdf5', border: '#a7f3d0', icon: '✅' },
+  { accent: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '💡' },
+  { accent: '#ef4444', bg: '#fef2f2', border: '#fecaca', icon: '🔴' },
+  { accent: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', icon: '🧠' },
+  { accent: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8', icon: '📌' },
+  { accent: '#14b8a6', bg: '#f0fdfa', border: '#99f6e4', icon: '🔗' },
+];
+
 const MindmapDiagram: React.FC<{ data: MindmapNode }> = ({ data }) => {
   const branches = data.branches ?? [];
-  const left = branches.filter((_, i) => i % 2 === 0);
-  const right = branches.filter((_, i) => i % 2 === 1);
-
-  const nodeStyle: React.CSSProperties = {
-    border: '1px solid #ececf3',
-    borderRadius: 14,
-    background: 'linear-gradient(180deg, #ffffff, #fafafe)',
-    padding: '0.55rem 0.68rem',
-    boxShadow: '0 8px 20px rgba(21,26,38,0.05)',
-  };
 
   return (
     <div
       style={{
-        position: 'relative',
-        border: '1px solid rgba(123,97,255,0.18)',
-        borderRadius: 18,
-        padding: '1rem',
-        background:
-          'radial-gradient(1000px 320px at 50% -20%, rgba(123,97,255,0.12), rgba(123,97,255,0.02) 55%, transparent 78%), linear-gradient(180deg, #ffffff, #fafafe)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.65), 0 14px 32px rgba(21,26,38,0.05)',
+        border: '1px solid #e2e8f0',
+        borderRadius: 20,
+        padding: '1.25rem',
+        background: '#ffffff',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
-      <svg
-        viewBox="0 0 1000 380"
-        preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-      >
-        <path d="M500 78 L500 130" stroke="rgba(123,97,255,0.55)" strokeWidth="2.2" />
-        {left.map((_, i) => {
-          const y = 170 + i * 70;
-          return (
-            <path
-              key={`l-${i}`}
-              d={`M500 130 C460 130, 430 ${y}, 360 ${y}`}
-              fill="none"
-              stroke="rgba(123,97,255,0.28)"
-              strokeWidth="1.8"
-            />
-          );
-        })}
-        {right.map((_, i) => {
-          const y = 170 + i * 70;
-          return (
-            <path
-              key={`r-${i}`}
-              d={`M500 130 C540 130, 570 ${y}, 640 ${y}`}
-              fill="none"
-              stroke="rgba(123,97,255,0.28)"
-              strokeWidth="1.8"
-            />
-          );
-        })}
-      </svg>
-
-      <div style={{ display: 'grid', placeItems: 'center', marginBottom: '0.7rem' }}>
+      {/* Central Topic */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
         <div
           style={{
             textAlign: 'center',
-            padding: '0.58rem 1.08rem',
-            borderRadius: 999,
-            background: 'linear-gradient(135deg, rgba(123,97,255,0.18), rgba(141,123,255,0.12))',
-            border: '1px solid rgba(123,97,255,0.35)',
-            color: '#2e2370',
-            fontWeight: 800,
-            boxShadow: '0 12px 28px rgba(123,97,255,0.12)',
-            maxWidth: 460,
-            letterSpacing: '0.01em',
+            padding: '0.75rem 1.5rem',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            color: '#ffffff',
+            fontWeight: 700,
+            fontSize: '1rem',
+            boxShadow: '0 4px 14px rgba(99,102,241,0.25)',
+            maxWidth: 500,
+            lineHeight: 1.4,
           }}
         >
           {data.centralTopic || 'Central topic'}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        <div style={{ display: 'grid', gap: '0.55rem', alignContent: 'start' }}>
-          {left.map((br, i) => (
-            <div key={`left-node-${i}`} style={nodeStyle}>
-              <div style={{ fontWeight: 700, marginBottom: '0.34rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#111111' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#7dd3fc', boxShadow: '0 0 0 4px rgba(125,211,252,0.16)' }} />
-                {br.topic || `Nhánh ${i + 1}`}
+      {/* Connector line */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+        <div style={{ width: 2, height: 20, background: 'linear-gradient(180deg, #8b5cf6, #e2e8f0)', borderRadius: 2 }} />
+      </div>
+
+      {/* Branches Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: branches.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '0.75rem' }}>
+        {branches.map((br, i) => {
+          const theme = BRANCH_THEMES[i % BRANCH_THEMES.length];
+          return (
+            <div
+              key={`branch-${i}`}
+              style={{
+                border: `1px solid ${theme.border}`,
+                borderRadius: 14,
+                background: theme.bg,
+                padding: '0.85rem 1rem',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 12px ${theme.accent}20`;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'none';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+              }}
+            >
+              {/* Branch header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1rem' }}>{theme.icon}</span>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: theme.accent }}>
+                  {br.topic || `Nhánh ${i + 1}`}
+                </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {/* Subtopics */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingLeft: '0.25rem' }}>
                 {(br.subtopics ?? []).map((s, idx) => (
-                  <span
+                  <div
                     key={idx}
                     style={{
-                      fontSize: '0.73rem',
-                      borderRadius: 999,
-                      border: '1px dashed #d7d9e4',
-                      padding: '0.14rem 0.48rem',
-                      color: '#6b7280',
-                      background: '#fff',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.4rem',
+                      fontSize: '0.8rem',
+                      color: '#475569',
+                      lineHeight: 1.5,
                     }}
                   >
-                    {s}
-                  </span>
+                    <span style={{ 
+                      marginTop: '0.35rem',
+                      width: 5, 
+                      minWidth: 5, 
+                      height: 5, 
+                      borderRadius: '50%', 
+                      background: theme.accent, 
+                      opacity: 0.6,
+                    }} />
+                    <span>{s}</span>
+                  </div>
                 ))}
               </div>
             </div>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gap: '0.55rem', alignContent: 'start' }}>
-          {right.map((br, i) => (
-            <div key={`right-node-${i}`} style={nodeStyle}>
-              <div style={{ fontWeight: 700, marginBottom: '0.34rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#111111' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c4b5fd', boxShadow: '0 0 0 4px rgba(196,181,253,0.18)' }} />
-                {br.topic || `Nhánh ${i + 1}`}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                {(br.subtopics ?? []).map((s, idx) => (
-                  <span
-                    key={idx}
-                    style={{
-                      fontSize: '0.73rem',
-                      borderRadius: 999,
-                      border: '1px dashed #d7d9e4',
-                      padding: '0.14rem 0.48rem',
-                      color: '#6b7280',
-                      background: '#fff',
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -741,11 +737,12 @@ const meetingsWorkspaceCss = `
 
 .meetings-workspace .mtw-recording-card video {
   width: 100%;
-  max-height: 360px;
-  border-radius: 16px !important;
+  max-height: 520px;
+  border-radius: 14px !important;
   background: #000;
-  border: 1px solid #e8e9f2;
-  box-shadow: 0 10px 24px rgba(21, 26, 38, 0.08);
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: block;
 }
 
 .meetings-workspace .mtw-text-recording {
@@ -1108,12 +1105,14 @@ const MenteeMeetingsPage: React.FC = () => {
                             </div>
 
                             {isVideoMp4(r.contentType) ? (
-                              <video
-                                controls
-                                preload="metadata"
-                                src={r.storageUrl}
-                                style={{ width: '100%', maxHeight: 360, borderRadius: 12, background: '#000' }}
-                              />
+                              <div style={{ width: '100%', borderRadius: 14, overflow: 'hidden', background: '#000', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                                <video
+                                  controls
+                                  preload="metadata"
+                                  src={r.storageUrl}
+                                  style={{ width: '100%', maxHeight: 520, display: 'block', borderRadius: 14, background: '#000' }}
+                                />
+                              </div>
                             ) : null}
 
                             {!isVideoMp4(r.contentType) ? (
