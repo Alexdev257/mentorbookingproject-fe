@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { bookingApi } from '../../api/booking';
 import { meetingApi } from '../../api/meetings';
 import { userApi } from '../../api/services';
@@ -450,26 +450,34 @@ const MyBookingsPage: React.FC = () => {
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
 
-  const fetchBookings = async () => {
+  const [pageIndex, setPageIndex] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 10;
+
+  const fetchBookings = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const response = await bookingApi.getMenteeBookings(user.id, 1, 50);
+      const response = await bookingApi.getMenteeBookings(user.id, pageIndex, PAGE_SIZE);
       if (response.isSuccess && response.data?.items) {
         setBookings(response.data.items);
+        if (response.data.totalPages) {
+            setTotalPages(response.data.totalPages);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch bookings:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, pageIndex]);
 
   useEffect(() => {
     fetchBookings();
-  }, [user]);
+  }, [fetchBookings]);
 
   useEffect(() => {
     const ids = [...new Set(bookings.map((b) => b.mentorId))];
@@ -784,6 +792,78 @@ const MyBookingsPage: React.FC = () => {
                   );
                 })}
               </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '3rem', marginBottom: '2rem', gap: '1.5rem', alignItems: 'center' }}>
+                   <button
+                       onClick={() => {
+                           setPageIndex((p) => Math.max(1, p - 1));
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                       }}
+                       disabled={pageIndex === 1}
+                       className="mbw-cancel-btn"
+                       style={{ padding: '0.6rem 1.2rem', background: pageIndex === 1 ? '#cbd5e1' : '#f1f5f9', color: pageIndex === 1 ? '#64748b' : '#334155', borderRadius: '8px' }}
+                   >
+                       Trang trước
+                   </button>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600, color: '#475569' }}>
+                       Trang
+                       <input
+                           type="number"
+                           min={1}
+                           max={totalPages}
+                           defaultValue={pageIndex}
+                           key={pageIndex}
+                           title="Nhập số trang và nhấn Enter"
+                           onKeyDown={(e) => {
+                               if (e.key === 'Enter') {
+                                   const val = parseInt(e.currentTarget.value, 10);
+                                   if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                                       setPageIndex(val);
+                                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                                   } else {
+                                       e.currentTarget.value = pageIndex.toString();
+                                   }
+                               }
+                           }}
+                           onBlur={(e) => {
+                               const val = parseInt(e.currentTarget.value, 10);
+                               if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                                   setPageIndex(val);
+                                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                               } else {
+                                   e.currentTarget.value = pageIndex.toString();
+                               }
+                           }}
+                           style={{ 
+                               width: '50px', 
+                               padding: '0.2rem 0', 
+                               textAlign: 'center', 
+                               borderRadius: '6px', 
+                               border: '1px solid #cbd5e1',
+                               fontSize: '1rem',
+                               fontWeight: 600,
+                               color: '#1e293b',
+                               outline: 'none',
+                               background: '#fff'
+                           }}
+                       />
+                       / {totalPages}
+                   </div>
+                   <button
+                       onClick={() => {
+                           setPageIndex((p) => Math.min(totalPages, p + 1));
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                       }}
+                       disabled={pageIndex === totalPages}
+                       className="mbw-cancel-btn"
+                       style={{ padding: '0.6rem 1.2rem', background: pageIndex === totalPages ? '#cbd5e1' : '#f1f5f9', color: pageIndex === totalPages ? '#64748b' : '#334155', borderRadius: '8px' }}
+                   >
+                       Trang sau
+                   </button>
+                </div>
+              )}
             </>
           )}
         </div>

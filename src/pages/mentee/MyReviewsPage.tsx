@@ -33,15 +33,22 @@ const MyReviewsPage: React.FC = () => {
   const [formComment, setFormComment] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [pageIndex, setPageIndex] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 10;
+
   const load = useCallback(async () => {
     if (!user) return;
     setError(null);
     const [rRes, bRes] = await Promise.all([
-      reviewApi.getList({ menteeId: user.id, pageNumber: 1, pageSize: 50, sortBy: 'createdat', sorting: true }),
-      bookingApi.getMenteeBookings(user.id, 1, 50),
+      reviewApi.getList({ menteeId: user.id, pageNumber: pageIndex, pageSize: PAGE_SIZE, sortBy: 'createdat', sorting: true }),
+      bookingApi.getMenteeBookings(user.id, 1, 100),
     ]);
     if (rRes.isSuccess && rRes.data?.items) {
       setReviews(rRes.data.items as ReviewResponseDto[]);
+      if (rRes.data.totalPages) {
+        setTotalPages(rRes.data.totalPages);
+      }
     } else {
       setReviews([]);
       if (!rRes.isSuccess) setError(rRes.message || 'Không tải được danh sách đánh giá');
@@ -51,7 +58,7 @@ const MyReviewsPage: React.FC = () => {
     } else {
       setBookings([]);
     }
-  }, [user]);
+  }, [user, pageIndex]);
 
   useEffect(() => {
     if (!user) {
@@ -287,6 +294,78 @@ const MyReviewsPage: React.FC = () => {
             </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '3rem', marginBottom: '2rem', gap: '1.5rem', alignItems: 'center' }}>
+           <button
+               onClick={() => {
+                   setPageIndex((p) => Math.max(1, p - 1));
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
+               disabled={pageIndex === 1}
+               className="nav-link"
+               style={{ padding: '0.6rem 1.2rem', background: pageIndex === 1 ? '#cbd5e1' : '#f1f5f9', color: pageIndex === 1 ? '#64748b' : '#334155', borderRadius: '8px', border: 'none', cursor: pageIndex === 1 ? 'not-allowed' : 'pointer' }}
+           >
+               Trang trước
+           </button>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600, color: '#475569' }}>
+               Trang
+               <input
+                   type="number"
+                   min={1}
+                   max={totalPages}
+                   defaultValue={pageIndex}
+                   key={pageIndex}
+                   title="Nhập số trang và nhấn Enter"
+                   onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                           const val = parseInt(e.currentTarget.value, 10);
+                           if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                               setPageIndex(val);
+                               window.scrollTo({ top: 0, behavior: 'smooth' });
+                           } else {
+                               e.currentTarget.value = pageIndex.toString();
+                           }
+                       }
+                   }}
+                   onBlur={(e) => {
+                       const val = parseInt(e.currentTarget.value, 10);
+                       if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                           setPageIndex(val);
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                       } else {
+                           e.currentTarget.value = pageIndex.toString();
+                       }
+                   }}
+                   style={{ 
+                       width: '50px', 
+                       padding: '0.2rem 0', 
+                       textAlign: 'center', 
+                       borderRadius: '6px', 
+                       border: '1px solid #cbd5e1',
+                       fontSize: '1rem',
+                       fontWeight: 600,
+                       color: '#1e293b',
+                       outline: 'none',
+                       background: '#fff'
+                   }}
+               />
+               / {totalPages}
+           </div>
+           <button
+               onClick={() => {
+                   setPageIndex((p) => Math.min(totalPages, p + 1));
+                   window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
+               disabled={pageIndex === totalPages}
+               className="nav-link"
+               style={{ padding: '0.6rem 1.2rem', background: pageIndex === totalPages ? '#cbd5e1' : '#f1f5f9', color: pageIndex === totalPages ? '#64748b' : '#334155', borderRadius: '8px', border: 'none', cursor: pageIndex === totalPages ? 'not-allowed' : 'pointer' }}
+           >
+               Trang sau
+           </button>
         </div>
       )}
 

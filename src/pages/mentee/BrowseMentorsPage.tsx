@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mentorsApi } from '../../api/services';
 import type { TeacherResponseDto } from '../../types';
@@ -339,24 +339,32 @@ const browseMentorsWorkspaceCss = `
 const BrowseMentorsPage: React.FC = () => {
   const [mentors, setMentors] = useState<TeacherResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageIndex, setPageIndex] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 9;
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchMentors = async () => {
-      try {
-        const response = await mentorsApi.list(1, 100);
-        if (response.isSuccess && response.data?.items) {
-          setMentors(response.data.items);
+  const fetchMentors = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await mentorsApi.list(pageIndex, PAGE_SIZE);
+      if (response.isSuccess && response.data?.items) {
+        setMentors(response.data.items);
+        if (response.data.totalPages) {
+            setTotalPages(response.data.totalPages);
         }
-      } catch (err) {
-        console.error('Failed to fetch mentors:', err);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch mentors:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [pageIndex]);
+
+  useEffect(() => {
     fetchMentors();
-  }, []);
+  }, [fetchMentors]);
 
   const filteredMentors = mentors.filter((m) => {
     const name = m.fullName?.toLowerCase() || '';
@@ -460,6 +468,78 @@ const BrowseMentorsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '3rem', marginBottom: '2rem', gap: '1.5rem', alignItems: 'center' }}>
+               <button
+                   onClick={() => {
+                       setPageIndex((p) => Math.max(1, p - 1));
+                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                   }}
+                   disabled={pageIndex === 1}
+                   className="bmw-book-btn"
+                   style={{ padding: '0.6rem 1.2rem', background: pageIndex === 1 ? '#cbd5e1' : undefined, flex: '0 0 auto', width: 'auto', minHeight: 'unset' }}
+               >
+                   Trang trước
+               </button>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600, color: '#475569' }}>
+                   Trang
+                   <input
+                       type="number"
+                       min={1}
+                       max={totalPages}
+                       defaultValue={pageIndex}
+                       key={pageIndex}
+                       title="Nhập số trang và nhấn Enter"
+                       onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                               const val = parseInt(e.currentTarget.value, 10);
+                               if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                                   setPageIndex(val);
+                                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                               } else {
+                                   e.currentTarget.value = pageIndex.toString();
+                               }
+                           }
+                       }}
+                       onBlur={(e) => {
+                           const val = parseInt(e.currentTarget.value, 10);
+                           if (!isNaN(val) && val >= 1 && val <= totalPages && val !== pageIndex) {
+                               setPageIndex(val);
+                               window.scrollTo({ top: 0, behavior: 'smooth' });
+                           } else {
+                               e.currentTarget.value = pageIndex.toString();
+                           }
+                       }}
+                       style={{ 
+                           width: '50px', 
+                           padding: '0.2rem 0', 
+                           textAlign: 'center', 
+                           borderRadius: '6px', 
+                           border: '1px solid #cbd5e1',
+                           fontSize: '1rem',
+                           fontWeight: 600,
+                           color: '#1e293b',
+                           outline: 'none',
+                           background: '#fff'
+                       }}
+                   />
+                   / {totalPages}
+               </div>
+               <button
+                   onClick={() => {
+                       setPageIndex((p) => Math.min(totalPages, p + 1));
+                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                   }}
+                   disabled={pageIndex === totalPages}
+                   className="bmw-book-btn"
+                   style={{ padding: '0.6rem 1.2rem', background: pageIndex === totalPages ? '#cbd5e1' : undefined, flex: '0 0 auto', width: 'auto', minHeight: 'unset' }}
+               >
+                   Trang sau
+               </button>
             </div>
           )}
         </div>
