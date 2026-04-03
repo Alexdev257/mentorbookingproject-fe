@@ -84,3 +84,14 @@
   max-width: 400px;
   padding: 2.5rem;
 }
+
+/* --- Append-only: MentorBooking shared helpers (mb-legal-*); keep existing rules above unchanged --- */
+.mb-legal-safe-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.mb-legal-focus:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

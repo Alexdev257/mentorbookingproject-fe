@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../api/services";
 import { LogIn, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
@@ -120,7 +120,14 @@ const LoginPage: React.FC = () => {
         </form>
 
         <p className="login-footer">
-          Don't have an account? <a href="#contact">Contact Administrator</a>
+          <Link to="/policies">Terms, privacy &amp; project policies</Link>
+          <span className="login-footer-sep" aria-hidden>
+            {" "}
+            ·{" "}
+          </span>
+          <span>
+            No account? Contact your <a href="#contact">administrator</a>.
+          </span>
         </p>
       </div>
     </div>
